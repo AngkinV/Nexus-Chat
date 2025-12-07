@@ -1,0 +1,80 @@
+{
+    "app": {
+        "name": "Nexus Chat",
+        "tagline": "随时随地连接任何人"
+    },
+    "auth": {
+        "login": "登录",
+        "register": "注册",
+        "username": "用户名",
+        "password": "密码",
+        "confirmPassword": "确认密码",
+        "nickname": "昵称",
+        "email": "邮箱",
+        "phone": "手机号",
+        "usernameOrEmail": "用户名或邮箱",
+        "logout": "退出登录",
+        "loginButton": "登录",
+        "registerButton": "注册",
+        "noAccount": "还没有账号？",
+        "haveAccount": "已有账号？",
+        "addPhoto": "添加头像",
+        "startMessaging": "开始聊天",
+        "skip": "跳过",
+        "optional": "（可选）",
+        "imageSizeWarning": "图片大小不能超过2MB",
+        "loginFailed": "登录失败，请检查您的账号密码",
+        "registerFailed": "注册失败，请重试",
+        "emailExists": "邮箱已被注册",
+        "usernameExists": "用户名已被使用",
+        "passwordMismatch": "两次密码不一致",
+        "invalidEmail": "请输入有效的邮箱地址"
+    },
+    "chat": {
+        "newChat": "新建对话",
+        "search": "搜索聊天或联系人",
+        "recentChats": "最近消息",
+        "contacts": "联系人",
+        "groups": "群组",
+        "selectChat": "选择聊天以开始对话",
+        "typeMessage": "输入消息...",
+        "send": "发送",
+        "online": "在线",
+        "offline": "离线",
+        "lastSeen": "最后在线",
+        "typing": "正在输入..."
+    },
+    "settings": {
+        "settings": "设置",
+        "profile": "个人资料",
+        "appearance": "外观",
+        "language": "语言",
+        "notifications": "通知",
+        "lightMode": "浅色模式",
+        "darkMode": "深色模式",
+        "alwaysOnTop": "窗口置顶",
+        "soundNotifications": "声音通知"
+    },
+    "contact": {
+        "addContact": "添加联系人",
+        "removeContact": "删除联系人",
+        "searchUsers": "搜索用户...",
+        "noContacts": "暂无联系人"
+    },
+    "group": {
+        "createGroup": "创建群组",
+        "groupName": "群组名称",
+        "addMembers": "添加成员",
+        "createButton": "创建"
+    },
+    "common": {
+        "save": "保存",
+        "cancel": "取消",
+        "delete": "删除",
+        "edit": "编辑",
+        "ok": "确定",
+        "back": "返回",
+        "enabled": "已开启",
+        "disabled": "已关闭"
+    }
+}

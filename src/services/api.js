@@ -1,0 +1,110 @@
+import axios from 'axios'
+
+const API_BASE_URL = 'http://localhost:8080/api'
+
+const apiClient = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json'
+    }
+})
+
+// Add token to requests
+apiClient.interceptors.request.use(config => {
+    const token = localStorage.getItem('token')
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+})
+
+// Auth API
+export const authAPI = {
+    register: ({ email, username, password, nickname, phone, avatarUrl }) =>
+        apiClient.post('/auth/register', { email, username, password, nickname, phone, avatarUrl }),
+
+    login: (usernameOrEmail, password) =>
+        apiClient.post('/auth/login', { usernameOrEmail, password }),
+
+    logout: (userId) =>
+        apiClient.post('/auth/logout', null, { params: { userId } })
+}
+
+// User API
+export const userAPI = {
+    getUserById: (id) => apiClient.get(`/users/${id}`),
+
+    getUserByUsername: (username) => apiClient.get(`/users/username/${username}`),
+
+    getAllUsers: () => apiClient.get('/users'),
+
+    updateProfile: (id, nickname, avatarUrl) =>
+        apiClient.put(`/users/${id}/profile`, { nickname, avatarUrl }),
+
+    updateOnlineStatus: (id, isOnline) =>
+        apiClient.put(`/users/${id}/status`, null, { params: { isOnline } })
+}
+
+// Chat API
+export const chatAPI = {
+    createDirectChat: (userId, contactId) =>
+        apiClient.post('/chats/direct', null, { params: { userId, contactId } }),
+
+    createGroupChat: (userId, name, memberIds) =>
+        apiClient.post('/chats/group', { name, memberIds }, { params: { userId } }),
+
+    getUserChats: (userId) => apiClient.get(`/chats/user/${userId}`),
+
+    getChatById: (chatId, userId) =>
+        apiClient.get(`/chats/${chatId}`, { params: { userId } })
+}
+
+// Message API
+export const messageAPI = {
+    sendMessage: (chatId, senderId, content, messageType = 'text', fileUrl = null) =>
+        apiClient.post('/messages', { chatId, senderId, content, messageType, fileUrl }),
+
+    getChatMessages: (chatId, userId, page = 0, size = 50) =>
+        apiClient.get(`/messages/chat/${chatId}`, { params: { userId, page, size } }),
+
+    markMessageAsRead: (messageId, userId) =>
+        apiClient.put(`/messages/${messageId}/read`, null, { params: { userId } }),
+
+    markChatMessagesAsRead: (chatId, userId) =>
+        apiClient.put(`/messages/chat/${chatId}/read`, null, { params: { userId } })
+}
+
+// Contact API
+export const contactAPI = {
+    addContact: (userId, contactUserId) =>
+        apiClient.post('/contacts', null, { params: { userId, contactUserId } }),
+
+    removeContact: (userId, contactUserId) =>
+        apiClient.delete('/contacts', { params: { userId, contactUserId } }),
+
+    getContacts: (userId) => apiClient.get(`/contacts/user/${userId}`)
+}
+
+// File API
+export const fileAPI = {
+    uploadFile: (file) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        return apiClient.post('/files/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+    },
+
+    uploadChunk: (chunk, chunkIndex, totalChunks, fileId) => {
+        const formData = new FormData()
+        formData.append('file', chunk)
+        formData.append('chunkIndex', chunkIndex)
+        formData.append('totalChunks', totalChunks)
+        formData.append('fileId', fileId)
+        return apiClient.post('/files/upload/chunk', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+    }
+}
+
+export default apiClient

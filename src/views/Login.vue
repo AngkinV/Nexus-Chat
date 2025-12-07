@@ -1,0 +1,422 @@
+<template>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="logo-area">
+        <div class="logo-circle">
+          <el-icon :size="64" color="#ffffff"><Promotion /></el-icon>
+        </div>
+        <h1>{{ $t('app.name') }}</h1>
+        <p>{{ $t('app.tagline') }}</p>
+      </div>
+
+      <div class="form-area">
+        <!-- Avatar Upload (Register Mode Only) -->
+        <div v-if="!isLoginMode" class="avatar-upload" @click="triggerFileInput">
+          <img v-if="avatarPreview" :src="avatarPreview" class="avatar-preview" />
+          <div v-else class="avatar-placeholder">
+            <el-icon :size="40"><Camera /></el-icon>
+            <span>{{ $t('auth.addPhoto') }}</span>
+          </div>
+          <input
+            type="file"
+            ref="fileInput"
+            accept="image/*"
+            class="hidden-input"
+            @change="handleFileChange"
+          />
+        </div>
+
+        <!-- Login Form -->
+        <div v-if="isLoginMode" class="input-group">
+          <el-input
+            v-model="loginForm.usernameOrEmail"
+            :placeholder="$t('auth.usernameOrEmail')"
+            size="large"
+            class="custom-input"
+            @keyup.enter="handleLogin"
+          >
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
+          <el-input
+            v-model="loginForm.password"
+            :placeholder="$t('auth.password')"
+            size="large"
+            type="password"
+            class="custom-input mt-3"
+            show-password
+            @keyup.enter="handleLogin"
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </div>
+
+        <!-- Register Form -->
+        <div v-else class="input-group">
+          <el-input
+            v-model="registerForm.username"
+            :placeholder="$t('auth.username')"
+            size="large"
+            class="custom-input"
+          >
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
+          
+          <el-input
+            v-model="registerForm.email"
+            :placeholder="$t('auth.email')"
+            size="large"
+            class="custom-input mt-3"
+          >
+            <template #prefix>
+              <el-icon><Message /></el-icon>
+            </template>
+          </el-input>
+
+          <el-input
+            v-model="registerForm.nickname"
+            :placeholder="$t('auth.nickname')"
+            size="large"
+            class="custom-input mt-3"
+          >
+            <template #prefix>
+              <el-icon><Postcard /></el-icon>
+            </template>
+          </el-input>
+
+          <el-input
+            v-model="registerForm.phone"
+            :placeholder="$t('auth.phone') + ' ' + $t('auth.optional')"
+            size="large"
+            class="custom-input mt-3"
+          >
+            <template #prefix>
+              <el-icon><Iphone /></el-icon>
+            </template>
+          </el-input>
+
+          <el-input
+            v-model="registerForm.password"
+            :placeholder="$t('auth.password')"
+            size="large"
+            type="password"
+            class="custom-input mt-3"
+            show-password
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+
+          <el-input
+            v-model="registerForm.confirmPassword"
+            :placeholder="$t('auth.confirmPassword')"
+            size="large"
+            type="password"
+            class="custom-input mt-3"
+            show-password
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </div>
+
+        <!-- Action Buttons -->
+        <el-button
+          type="primary"
+          size="large"
+          class="login-btn"
+          :loading="loading"
+          @click="isLoginMode ? handleLogin() : handleRegister()"
+          :disabled="isLoginMode ? !isLoginValid : !isRegisterValid"
+        >
+          {{ isLoginMode ? $t('auth.loginButton') : $t('auth.registerButton') }}
+        </el-button>
+
+        <!-- Toggle Mode -->
+        <div class="toggle-mode">
+          <span>{{ isLoginMode ? $t('auth.noAccount') : $t('auth.haveAccount') }}</span>
+          <a href="#" @click.prevent="toggleMode">{{ isLoginMode ? $t('auth.register') : $t('auth.login') }}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useUserStore } from '@/stores/user'
+import { Promotion, Camera, User, Lock, Message, Iphone, Postcard } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+
+const { t } = useI18n()
+const router = useRouter()
+const userStore = useUserStore()
+
+const isLoginMode = ref(true)
+const loading = ref(false)
+const avatarPreview = ref(null)
+const fileInput = ref(null)
+
+const loginForm = reactive({
+  usernameOrEmail: '',
+  password: ''
+})
+
+const registerForm = reactive({
+  username: '',
+  email: '',
+  nickname: '',
+  phone: '',
+  password: '',
+  confirmPassword: ''
+})
+
+const isLoginValid = computed(() => {
+  return loginForm.usernameOrEmail && loginForm.password
+})
+
+const isRegisterValid = computed(() => {
+  return registerForm.username && 
+         registerForm.email && 
+         registerForm.nickname && 
+         registerForm.password && 
+         registerForm.confirmPassword
+})
+
+const toggleMode = () => {
+  isLoginMode.value = !isLoginMode.value
+  // Reset forms
+  loginForm.usernameOrEmail = ''
+  loginForm.password = ''
+  Object.keys(registerForm).forEach(key => registerForm[key] = '')
+  avatarPreview.value = null
+}
+
+const triggerFileInput = () => {
+  fileInput.value.click()
+}
+
+const handleFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    if (file.size > 2 * 1024 * 1024) {
+      ElMessage.warning(t('auth.imageSizeWarning'))
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      avatarPreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const handleLogin = async () => {
+  if (!isLoginValid.value) return
+
+  loading.value = true
+  try {
+    await userStore.login(loginForm.usernameOrEmail, loginForm.password)
+    router.push('/main')
+  } catch (error) {
+    ElMessage.error(error || t('auth.loginFailed'))
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleRegister = async () => {
+  if (!isRegisterValid.value) return
+  
+  if (registerForm.password !== registerForm.confirmPassword) {
+    ElMessage.error(t('auth.passwordMismatch'))
+    return
+  }
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(registerForm.email)) {
+    ElMessage.error(t('auth.invalidEmail'))
+    return
+  }
+
+  loading.value = true
+  try {
+    await userStore.register({
+      username: registerForm.username,
+      email: registerForm.email,
+      nickname: registerForm.nickname,
+      password: registerForm.password,
+      phone: registerForm.phone || null, // Optional
+      avatarUrl: avatarPreview.value
+    })
+    router.push('/main')
+    ElMessage.success(t('auth.registerSuccess') || 'Registration successful')
+  } catch (error) {
+    ElMessage.error(error || t('auth.registerFailed'))
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<style scoped>
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f2f5;
+  font-family: 'Inter', sans-serif;
+}
+
+.login-card {
+  background: white;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+  padding: 40px;
+  text-align: center;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.logo-area {
+  margin-bottom: 32px;
+}
+
+.logo-circle {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #2481cc 0%, #00a8ff 100%);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 8px 16px rgba(36, 129, 204, 0.3);
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1c1c1e;
+  margin-bottom: 4px;
+}
+
+p {
+  color: #8e8e93;
+  font-size: 14px;
+}
+
+.avatar-upload {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  margin: 0 auto 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 2px dashed #d1d1d6;
+}
+
+.avatar-upload:hover {
+  border-color: #2481cc;
+  background: #eef6fc;
+}
+
+.avatar-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #8e8e93;
+  font-size: 10px;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.input-group {
+  margin-bottom: 24px;
+}
+
+.mt-3 {
+  margin-top: 12px;
+}
+
+.custom-input :deep(.el-input__wrapper) {
+  border-radius: 12px;
+  padding: 8px 16px;
+  box-shadow: 0 0 0 1px #e5e5ea inset;
+}
+
+.custom-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px #2481cc inset;
+}
+
+.login-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background: #2481cc;
+  border: none;
+  margin-bottom: 16px;
+}
+
+.login-btn:hover {
+  background: #1a6fb0;
+}
+
+.login-btn:disabled {
+  background: #a0cfff;
+}
+
+.toggle-mode {
+  font-size: 14px;
+  color: #8e8e93;
+}
+
+.toggle-mode a {
+  color: #2481cc;
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.toggle-mode a:hover {
+  text-decoration: underline;
+}
+
+/* Scrollbar styling for the card */
+.login-card::-webkit-scrollbar {
+  width: 4px;
+}
+
+.login-card::-webkit-scrollbar-thumb {
+  background-color: #d1d1d6;
+  border-radius: 2px;
+}
+</style>

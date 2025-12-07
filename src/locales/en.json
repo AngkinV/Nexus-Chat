@@ -1,0 +1,80 @@
+{
+    "app": {
+        "name": "Nexus Chat",
+        "tagline": "Connect with anyone, anywhere"
+    },
+    "auth": {
+        "login": "Login",
+        "register": "Register",
+        "username": "Username",
+        "password": "Password",
+        "confirmPassword": "Confirm Password",
+        "nickname": "Nickname",
+        "email": "Email",
+        "phone": "Phone Number",
+        "usernameOrEmail": "Username or Email",
+        "logout": "Logout",
+        "loginButton": "Log In",
+        "registerButton": "Sign Up",
+        "noAccount": "Don't have an account?",
+        "haveAccount": "Already have an account?",
+        "addPhoto": "Add Photo",
+        "startMessaging": "Start Messaging",
+        "skip": "Skip",
+        "optional": "(Optional)",
+        "imageSizeWarning": "Image size should be less than 2MB",
+        "loginFailed": "Login failed. Please check your credentials.",
+        "registerFailed": "Registration failed. Please try again.",
+        "emailExists": "Email already exists",
+        "usernameExists": "Username already exists",
+        "passwordMismatch": "Passwords do not match",
+        "invalidEmail": "Please enter a valid email address"
+    },
+    "chat": {
+        "newChat": "New Chat",
+        "search": "Search chats or contacts",
+        "recentChats": "Recent Chats",
+        "contacts": "Contacts",
+        "groups": "Groups",
+        "selectChat": "Select a chat to start messaging",
+        "typeMessage": "Type a message...",
+        "send": "Send",
+        "online": "Online",
+        "offline": "Offline",
+        "lastSeen": "Last seen",
+        "typing": "typing..."
+    },
+    "settings": {
+        "settings": "Settings",
+        "profile": "Profile",
+        "appearance": "Appearance",
+        "language": "Language",
+        "notifications": "Notifications",
+        "lightMode": "Light Mode",
+        "darkMode": "Dark Mode",
+        "alwaysOnTop": "Always on Top",
+        "soundNotifications": "Sound Notifications"
+    },
+    "contact": {
+        "addContact": "Add Contact",
+        "removeContact": "Remove Contact",
+        "searchUsers": "Search users...",
+        "noContacts": "No contacts yet"
+    },
+    "group": {
+        "createGroup": "Create Group",
+        "groupName": "Group Name",
+        "addMembers": "Add Members",
+        "createButton": "Create"
+    },
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "ok": "OK",
+        "back": "Back",
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+    }
+}
