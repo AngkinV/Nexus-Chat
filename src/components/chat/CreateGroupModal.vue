@@ -1,13 +1,15 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    :title="$t('chat.newGroup')"
-    width="400px"
-    class="custom-dialog"
+    :title="currentStep === 1 ? $t('group.createGroup') : $t('group.addMembers')"
+    width="450px"
+    class="create-group-dialog"
     :before-close="handleClose"
+    :close-on-click-modal="false"
   >
-    <div class="group-form">
-      <div class="avatar-upload">
+    <!-- Step 1: Group Info -->
+    <div v-if="currentStep === 1" class="group-form">
+      <div class="avatar-upload-section">
         <el-upload
           class="avatar-uploader"
           action="#"
@@ -15,26 +17,79 @@
           :auto-upload="false"
           :on-change="handleAvatarChange"
         >
-          <img v-if="groupAvatar" :src="groupAvatar" class="avatar" />
-          <el-icon v-else class="avatar-uploader-icon"><Camera /></el-icon>
+          <div class="avatar-wrapper">
+            <img v-if="groupAvatar" :src="groupAvatar" class="avatar" />
+            <div v-else class="avatar-placeholder">
+              <el-icon class="camera-icon"><Camera /></el-icon>
+              <span>{{ $t('group.addPhoto') }}</span>
+            </div>
+            <div class="avatar-hover-overlay">
+              <el-icon><Camera /></el-icon>
+            </div>
+          </div>
         </el-upload>
       </div>
       
       <el-input
         v-model="groupName"
-        :placeholder="$t('chat.groupName')"
+        :placeholder="$t('group.groupName')"
         class="group-name-input"
+        maxlength="50"
+        show-word-limit
       />
 
-      <div class="user-selection">
-        <h4>{{ $t('chat.addMembers') }}</h4>
-        <el-input
-          v-model="searchQuery"
-          :placeholder="$t('common.search')"
-          class="member-search"
-          prefix-icon="Search"
-        />
-        <div class="user-list">
+      <el-input
+        v-model="groupDescription"
+        type="textarea"
+        :placeholder="$t('group.description')"
+        :rows="3"
+        class="group-desc-input"
+        maxlength="200"
+        show-word-limit
+      />
+
+      <div class="group-settings">
+        <div class="setting-item">
+          <div class="setting-left">
+            <el-icon><Lock /></el-icon>
+            <span>{{ $t('group.privateGroup') }}</span>
+          </div>
+          <el-switch v-model="isPrivate" />
+        </div>
+        <p class="setting-hint">{{ isPrivate ? $t('group.privateHint') : $t('group.publicHint') }}</p>
+      </div>
+    </div>
+
+    <!-- Step 2: Add Members -->
+    <div v-else class="member-selection">
+      <el-input
+        v-model="searchQuery"
+        :placeholder="$t('contact.searchUsers')"
+        class="member-search"
+        clearable
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+
+      <!-- Selected Members Preview -->
+      <div v-if="selectedUsers.length > 0" class="selected-members">
+        <div
+          v-for="user in selectedMembersList"
+          :key="user.id"
+          class="selected-member-tag"
+        >
+          <el-avatar :size="24" :src="user.avatar || defaultAvatar" />
+          <span>{{ user.nickname }}</span>
+          <el-icon class="remove-icon" @click="toggleUser(user.id)"><Close /></el-icon>
+        </div>
+      </div>
+
+      <!-- Available Users List -->
+      <div class="available-users">
+        <div class="section-title">{{ $t('group.availableMembers') }}</div>
+        <el-scrollbar max-height="300px">
           <div
             v-for="user in filteredUsers"
             :key="user.id"
@@ -42,19 +97,45 @@
             :class="{ selected: selectedUsers.includes(user.id) }"
             @click="toggleUser(user.id)"
           >
-            <el-avatar :size="32" :src="user.avatar || defaultAvatar" />
-            <span class="username">{{ user.nickname }}</span>
-            <el-icon v-if="selectedUsers.includes(user.id)" class="check-icon"><Check /></el-icon>
+            <el-avatar :size="40" :src="user.avatar || defaultAvatar" />
+            <div class="user-info">
+              <span class="user-name">{{ user.nickname }}</span>
+              <span class="user-username">@{{ user.username }}</span>
+            </div>
+            <div class="check-box" :class="{ checked: selectedUsers.includes(user.id) }">
+              <el-icon v-if="selectedUsers.includes(user.id)"><Check /></el-icon>
+            </div>
           </div>
-        </div>
+        </el-scrollbar>
+      </div>
+      
+      <div class="member-count">
+        {{ $t('group.selectedCount', { count: selectedUsers.length }) }}
       </div>
     </div>
 
     <template #footer>
       <span class="dialog-footer">
+        <el-button v-if="currentStep === 2" @click="currentStep = 1">
+          {{ $t('common.back') }}
+        </el-button>
         <el-button @click="handleClose">{{ $t('common.cancel') }}</el-button>
-        <el-button type="primary" @click="createGroup" :disabled="!groupName || selectedUsers.length === 0">
-          {{ $t('common.create') }}
+        <el-button 
+          v-if="currentStep === 1"
+          type="primary" 
+          @click="goToStep2"
+          :disabled="!groupName.trim()"
+        >
+          {{ $t('common.next') }}
+        </el-button>
+        <el-button 
+          v-else
+          type="primary" 
+          @click="createGroup" 
+          :disabled="selectedUsers.length === 0"
+          :loading="isCreating"
+        >
+          {{ $t('group.createButton') }}
         </el-button>
       </span>
     </template>
@@ -62,9 +143,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { Camera, Check, Search } from '@element-plus/icons-vue'
+import { ref, computed, watch } from 'vue'
+import { Camera, Check, Search, Lock, Close } from '@element-plus/icons-vue'
 import { useChatStore } from '@/stores/chat'
+import { useContactStore } from '@/stores/contact'
+import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   visible: Boolean
@@ -73,32 +159,52 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'created'])
 
 const chatStore = useChatStore()
+const contactStore = useContactStore()
+
+const currentStep = ref(1)
 const groupName = ref('')
+const groupDescription = ref('')
 const groupAvatar = ref('')
+const isPrivate = ref(false)
 const selectedUsers = ref([])
 const searchQuery = ref('')
+const isCreating = ref(false)
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
-// Mock available users
+// Mock available users - in real app, this would come from API/store
 const availableUsers = ref([
-  { id: 101, nickname: 'Alice', avatar: '' },
-  { id: 102, nickname: 'Bob', avatar: '' },
-  { id: 103, nickname: 'Charlie', avatar: '' },
-  { id: 104, nickname: 'David', avatar: '' },
-  { id: 105, nickname: 'Eve', avatar: '' }
+  { id: 101, nickname: 'Alice', username: 'alice', avatar: '', isOnline: true },
+  { id: 102, nickname: 'Bob', username: 'bob', avatar: '', isOnline: true },
+  { id: 103, nickname: 'Charlie', username: 'charlie', avatar: '', isOnline: false },
+  { id: 104, nickname: 'David', username: 'david', avatar: '', isOnline: true },
+  { id: 105, nickname: 'Eve', username: 'eve', avatar: '', isOnline: false },
+  { id: 106, nickname: 'Frank', username: 'frank', avatar: '', isOnline: true },
+  { id: 107, nickname: 'Grace', username: 'grace', avatar: '', isOnline: false }
 ])
 
 const filteredUsers = computed(() => {
   if (!searchQuery.value) return availableUsers.value
   const query = searchQuery.value.toLowerCase()
   return availableUsers.value.filter(user => 
-    user.nickname.toLowerCase().includes(query)
+    user.nickname.toLowerCase().includes(query) ||
+    user.username.toLowerCase().includes(query)
   )
+})
+
+const selectedMembersList = computed(() => {
+  return availableUsers.value.filter(user => selectedUsers.value.includes(user.id))
 })
 
 const dialogVisible = computed({
   get: () => props.visible,
   set: (val) => emit('update:visible', val)
+})
+
+// Reset form when dialog opens
+watch(() => props.visible, (val) => {
+  if (val) {
+    resetForm()
+  }
 })
 
 const handleClose = () => {
@@ -107,13 +213,21 @@ const handleClose = () => {
 }
 
 const resetForm = () => {
+  currentStep.value = 1
   groupName.value = ''
+  groupDescription.value = ''
   groupAvatar.value = ''
+  isPrivate.value = false
   selectedUsers.value = []
   searchQuery.value = ''
+  isCreating.value = false
 }
 
 const handleAvatarChange = (file) => {
+  if (file.raw.size > 2 * 1024 * 1024) {
+    ElMessage.warning(t('auth.imageSizeWarning'))
+    return
+  }
   const reader = new FileReader()
   reader.onload = (e) => {
     groupAvatar.value = e.target.result
@@ -130,49 +244,105 @@ const toggleUser = (userId) => {
   }
 }
 
-const createGroup = () => {
-  const newGroup = {
-    id: Date.now(),
-    name: groupName.value,
-    avatar: groupAvatar.value,
-    lastMessage: 'Group created',
-    lastMessageTime: new Date(),
-    unreadCount: 0,
-    online: true,
-    type: 'GROUP',
-    members: selectedUsers.value
+const goToStep2 = () => {
+  if (!groupName.value.trim()) {
+    ElMessage.warning(t('group.nameRequired'))
+    return
   }
+  currentStep.value = 2
+}
+
+const createGroup = async () => {
+  if (selectedUsers.value.length === 0) {
+    ElMessage.warning(t('group.selectMembers'))
+    return
+  }
+
+  isCreating.value = true
   
-  chatStore.chats.unshift(newGroup)
-  emit('created', newGroup)
-  handleClose()
+  try {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    const newGroup = {
+      id: Date.now(),
+      name: groupName.value,
+      description: groupDescription.value,
+      avatar: groupAvatar.value || '',
+      lastMessage: t('group.created'),
+      lastMessageTime: new Date(),
+      unreadCount: 0,
+      online: true,
+      type: 'GROUP',
+      isPrivate: isPrivate.value,
+      members: selectedUsers.value,
+      memberCount: selectedUsers.value.length + 1 // +1 for creator
+    }
+    
+    chatStore.chats.unshift(newGroup)
+    emit('created', newGroup)
+    ElMessage.success(t('group.createSuccess'))
+    handleClose()
+  } catch (error) {
+    ElMessage.error(t('group.createFailed'))
+  } finally {
+    isCreating.value = false
+  }
 }
 </script>
 
 <style scoped>
+.create-group-dialog :deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
 .group-form {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 20px;
 }
 
-.avatar-upload {
-  width: 80px;
-  height: 80px;
+.avatar-upload-section {
+  display: flex;
+  justify-content: center;
+}
+
+.avatar-wrapper {
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   overflow: hidden;
   position: relative;
+  transition: transform 0.2s;
 }
 
-.avatar-uploader-icon {
+.avatar-wrapper:hover {
+  transform: scale(1.05);
+}
+
+.avatar-wrapper:hover .avatar-hover-overlay {
+  opacity: 1;
+}
+
+.avatar-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+  gap: 5px;
+}
+
+.camera-icon {
   font-size: 28px;
-  color: #8c939d;
+}
+
+.avatar-placeholder span {
+  font-size: 12px;
 }
 
 .avatar {
@@ -181,51 +351,178 @@ const createGroup = () => {
   object-fit: cover;
 }
 
-.group-name-input {
-  width: 100%;
+.avatar-hover-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 24px;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.user-selection {
-  width: 100%;
+.group-name-input :deep(.el-input__wrapper) {
+  border-radius: 12px;
+  padding: 10px 15px;
+}
+
+.group-desc-input :deep(.el-textarea__inner) {
+  border-radius: 12px;
+  padding: 12px 15px;
+}
+
+.group-settings {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.setting-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #333;
+}
+
+.setting-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+/* Step 2 Styles */
+.member-selection {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
 }
 
-.member-search {
-  margin-bottom: 5px;
+.member-search :deep(.el-input__wrapper) {
+  border-radius: 20px;
+  background: #f5f5f5;
 }
 
-.user-list {
-  max-height: 200px;
-  overflow-y: auto;
+.selected-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  min-height: 50px;
+}
+
+.selected-member-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e3f2fd;
+  border-radius: 20px;
+  padding: 4px 10px 4px 4px;
+  font-size: 13px;
+  color: #1976d2;
+}
+
+.remove-icon {
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.remove-icon:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.available-users {
   border: 1px solid #e5e5e5;
-  border-radius: 8px;
+  border-radius: 12px;
+  padding: 15px;
+  background: #fafafa;
 }
 
 .user-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 12px;
+  padding: 10px 12px;
   cursor: pointer;
-  transition: background 0.2s;
+  border-radius: 10px;
+  transition: all 0.2s;
 }
 
 .user-item:hover {
-  background: #f5f5f5;
+  background: #f0f0f0;
 }
 
 .user-item.selected {
   background: #e3f2fd;
 }
 
-.username {
+.user-info {
   flex: 1;
-  font-size: 14px;
+  display: flex;
+  flex-direction: column;
 }
 
-.check-icon {
-  color: #3390ec;
+.user-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+}
+
+.user-username {
+  font-size: 12px;
+  color: #999;
+}
+
+.check-box {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.check-box.checked {
+  background: #3390ec;
+  border-color: #3390ec;
+  color: white;
+}
+
+.member-count {
+  text-align: center;
+  font-size: 13px;
+  color: #666;
+}
+
+.dialog-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
 }
 </style>

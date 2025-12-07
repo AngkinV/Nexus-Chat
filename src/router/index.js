@@ -3,6 +3,7 @@ import Login from '@/views/Login.vue'
 import Setup from '@/views/Setup.vue'
 import Main from '@/views/Main.vue'
 import Settings from '@/views/Settings.vue'
+import Profile from '@/views/Profile.vue'
 
 const router = createRouter({
     history: createWebHistory(),
@@ -31,6 +32,12 @@ const router = createRouter({
             path: '/settings',
             name: 'Settings',
             component: Settings,
+            meta: { requiresAuth: true }
+        },
+        {
+            path: '/profile',
+            name: 'Profile',
+            component: Profile,
             meta: { requiresAuth: true }
         }
     ]

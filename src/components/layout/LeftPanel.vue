@@ -2,7 +2,7 @@
   <div class="left-panel">
     <!-- Header: Search & Settings -->
     <div class="panel-header">
-      <div class="menu-btn" @click="goToSettings" title="设置">
+      <div class="menu-btn" @click="goToSettings" :title="$t('settings.settings')">
         <el-icon :size="24" color="#707579"><Setting /></el-icon>
       </div>
       <div class="search-bar">
@@ -18,24 +18,66 @@
       </div>
     </div>
 
-    <!-- Chat List -->
-    <div class="chat-list-container">
-      <ChatList :search-query="searchQuery" />
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <div 
+        class="tab-item" 
+        :class="{ active: activeTab === 'chats' }"
+        @click="activeTab = 'chats'"
+      >
+        <span>{{ $t('chat.recentChats') }}</span>
+        <span v-if="chatStore.totalUnreadCount > 0" class="tab-badge">{{ chatStore.totalUnreadCount }}</span>
+      </div>
+      <div 
+        class="tab-item" 
+        :class="{ active: activeTab === 'contacts' }"
+        @click="activeTab = 'contacts'"
+      >
+        <span>{{ $t('chat.contacts') }}</span>
+        <span v-if="contactStore.contacts.length > 0" class="tab-count">{{ contactStore.contacts.length }}</span>
+      </div>
+      <div 
+        class="tab-item" 
+        :class="{ active: activeTab === 'groups' }"
+        @click="activeTab = 'groups'"
+      >
+        <span>{{ $t('chat.groups') }}</span>
+        <span v-if="chatStore.groupChats.length > 0" class="tab-count">{{ chatStore.groupChats.length }}</span>
+      </div>
+    </div>
+
+    <!-- Content based on active tab -->
+    <div class="list-container">
+      <!-- Chats Tab -->
+      <template v-if="activeTab === 'chats'">
+        <ChatList :search-query="searchQuery" />
+      </template>
+
+      <!-- Contacts Tab -->
+      <template v-else-if="activeTab === 'contacts'">
+        <ContactList :search-query="searchQuery" @select="handleContactSelect" />
+      </template>
+
+      <!-- Groups Tab -->
+      <template v-else>
+        <GroupList :search-query="searchQuery" @select="handleGroupSelect" />
+      </template>
     </div>
 
     <!-- Bottom: New Chat & Profile -->
     <div class="panel-footer">
-      <div class="user-profile">
+      <div class="user-profile" @click="goToProfile">
         <el-avatar :size="40" :src="userStore.currentUser?.avatar || defaultAvatar" />
         <div class="user-info">
           <span class="username">{{ userStore.currentUser?.nickname || 'User' }}</span>
+          <span class="user-status">{{ $t('chat.online') }}</span>
         </div>
       </div>
       <div class="action-buttons">
-        <el-button circle class="icon-btn" @click="openAddContact" title="Add Contact">
+        <el-button circle class="icon-btn" @click="openAddContact" :title="$t('contact.addContact')">
           <el-icon><Plus /></el-icon>
         </el-button>
-        <el-button circle type="primary" class="new-chat-btn" @click="openNewChat" title="New Group">
+        <el-button circle type="primary" class="new-chat-btn" @click="openNewChat" :title="$t('group.createGroup')">
           <el-icon><EditPen /></el-icon>
         </el-button>
       </div>
@@ -59,20 +101,30 @@ import { useRouter } from 'vue-router'
 import { Search, Setting, EditPen, Plus } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
+import { useContactStore } from '@/stores/contact'
 import ChatList from '@/components/chat/ChatList.vue'
+import ContactList from '@/components/contact/ContactList.vue'
+import GroupList from '@/components/chat/GroupList.vue'
 import CreateGroupModal from '@/components/chat/CreateGroupModal.vue'
 import AddContactModal from '@/components/contact/AddContactModal.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const chatStore = useChatStore()
+const contactStore = useContactStore()
+
 const searchQuery = ref('')
+const activeTab = ref('chats')
 const showCreateGroup = ref(false)
 const showAddContact = ref(false)
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
 const goToSettings = () => {
   router.push('/settings')
+}
+
+const goToProfile = () => {
+  router.push('/profile')
 }
 
 const openNewChat = () => {
@@ -85,11 +137,22 @@ const openAddContact = () => {
 
 const handleGroupCreated = (group) => {
   chatStore.setActiveChat(group)
+  activeTab.value = 'chats'
 }
 
 const handleContactAdded = (contact) => {
-  // Logic to handle added contact, e.g., open chat with them
   console.log('Contact added:', contact)
+}
+
+const handleContactSelect = async (contact) => {
+  // Create or open direct chat with contact
+  await chatStore.createDirectChat(contact)
+  activeTab.value = 'chats'
+}
+
+const handleGroupSelect = (group) => {
+  chatStore.setActiveChat(group)
+  activeTab.value = 'chats'
 }
 </script>
 
@@ -134,7 +197,62 @@ const handleContactAdded = (contact) => {
   box-shadow: 0 0 0 2px #3390ec inset;
 }
 
-.chat-list-container {
+.tabs-container {
+  display: flex;
+  border-bottom: 1px solid #f1f1f1;
+  padding: 0 15px;
+}
+
+.tab-item {
+  flex: 1;
+  padding: 12px 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #707579;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s;
+}
+
+.tab-item:hover {
+  color: #3390ec;
+}
+
+.tab-item.active {
+  color: #3390ec;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 20%;
+  right: 20%;
+  height: 3px;
+  background: #3390ec;
+  border-radius: 3px 3px 0 0;
+}
+
+.tab-badge {
+  background: #ff3b30;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+}
+
+.tab-count {
+  font-size: 11px;
+  color: #999;
+}
+
+.list-container {
   flex: 1;
   overflow-y: auto;
 }
@@ -151,12 +269,30 @@ const handleContactAdded = (contact) => {
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.user-profile:hover {
+  background: #f5f5f5;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
 }
 
 .username {
   font-weight: 600;
   font-size: 14px;
   color: #1c1c1e;
+}
+
+.user-status {
+  font-size: 12px;
+  color: #3390ec;
 }
 
 .action-buttons {

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { chatAPI } from '@/services/api'
 
 export const useChatStore = defineStore('chat', () => {
     const activeChat = ref(null)
@@ -12,7 +13,9 @@ export const useChatStore = defineStore('chat', () => {
             lastMessageTime: new Date(),
             unreadCount: 2,
             online: true,
-            type: 'GROUP'
+            type: 'GROUP',
+            memberCount: 5,
+            description: 'Official Nexus Chat team group'
         },
         {
             id: 2,
@@ -49,13 +52,33 @@ export const useChatStore = defineStore('chat', () => {
         }
     ])
 
+    // Computed: Get all group chats
+    const groupChats = computed(() => {
+        return chats.value.filter(chat => chat.type === 'GROUP')
+    })
+
+    // Computed: Get all direct chats
+    const directChats = computed(() => {
+        return chats.value.filter(chat => chat.type === 'DIRECT')
+    })
+
+    // Computed: Total unread count
+    const totalUnreadCount = computed(() => {
+        return chats.value.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0)
+    })
+
     const setActiveChat = (chat) => {
         activeChat.value = chat
-        // In real app, fetch messages for this chat
+        // Mark as read when opening chat
+        if (chat) {
+            const chatIndex = chats.value.findIndex(c => c.id === chat.id)
+            if (chatIndex !== -1) {
+                chats.value[chatIndex].unreadCount = 0
+            }
+        }
     }
 
     const sendMessage = (messageData) => {
-        // Simulate sending
         const newMessage = {
             id: Date.now(),
             chatId: messageData.chatId,
@@ -79,11 +102,119 @@ export const useChatStore = defineStore('chat', () => {
         }
     }
 
+    const createGroup = async (groupData) => {
+        try {
+            // In real app, call API
+            // const response = await chatAPI.createGroupChat(userId, groupData.name, groupData.memberIds)
+
+            const newGroup = {
+                id: Date.now(),
+                name: groupData.name,
+                description: groupData.description || '',
+                avatar: groupData.avatar || '',
+                lastMessage: 'Group created',
+                lastMessageTime: new Date(),
+                unreadCount: 0,
+                online: true,
+                type: 'GROUP',
+                isPrivate: groupData.isPrivate || false,
+                members: groupData.members || [],
+                memberCount: (groupData.members?.length || 0) + 1
+            }
+
+            chats.value.unshift(newGroup)
+            return newGroup
+        } catch (error) {
+            console.error('Failed to create group:', error)
+            throw error
+        }
+    }
+
+    const createDirectChat = async (contact) => {
+        // Check if chat already exists
+        const existingChat = chats.value.find(
+            c => c.type === 'DIRECT' && c.contactId === contact.id
+        )
+
+        if (existingChat) {
+            setActiveChat(existingChat)
+            return existingChat
+        }
+
+        try {
+            const newChat = {
+                id: Date.now(),
+                contactId: contact.id,
+                name: contact.nickname,
+                avatar: contact.avatar || '',
+                lastMessage: '',
+                lastMessageTime: new Date(),
+                unreadCount: 0,
+                online: contact.isOnline || false,
+                type: 'DIRECT'
+            }
+
+            chats.value.unshift(newChat)
+            setActiveChat(newChat)
+            return newChat
+        } catch (error) {
+            console.error('Failed to create direct chat:', error)
+            throw error
+        }
+    }
+
+    const updateGroupInfo = (groupId, updates) => {
+        const chatIndex = chats.value.findIndex(c => c.id === groupId)
+        if (chatIndex !== -1) {
+            chats.value[chatIndex] = {
+                ...chats.value[chatIndex],
+                ...updates
+            }
+            // Update activeChat if it's the same
+            if (activeChat.value?.id === groupId) {
+                activeChat.value = chats.value[chatIndex]
+            }
+        }
+    }
+
+    const leaveGroup = (groupId) => {
+        const chatIndex = chats.value.findIndex(c => c.id === groupId)
+        if (chatIndex !== -1) {
+            chats.value.splice(chatIndex, 1)
+            if (activeChat.value?.id === groupId) {
+                activeChat.value = null
+            }
+        }
+    }
+
+    const deleteChat = (chatId) => {
+        const chatIndex = chats.value.findIndex(c => c.id === chatId)
+        if (chatIndex !== -1) {
+            chats.value.splice(chatIndex, 1)
+            if (activeChat.value?.id === chatId) {
+                activeChat.value = null
+            }
+        }
+    }
+
+    const getMessagesForChat = (chatId) => {
+        return messages.value.filter(m => m.chatId === chatId)
+    }
+
     return {
         activeChat,
         chats,
         messages,
+        groupChats,
+        directChats,
+        totalUnreadCount,
         setActiveChat,
-        sendMessage
+        sendMessage,
+        createGroup,
+        createDirectChat,
+        updateGroupInfo,
+        leaveGroup,
+        deleteChat,
+        getMessagesForChat
     }
 })

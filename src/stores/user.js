@@ -1,21 +1,34 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { authAPI } from '@/services/api'
+import { ref, computed } from 'vue'
+import { authAPI, userAPI } from '@/services/api'
 
 export const useUserStore = defineStore('user', () => {
     const currentUser = ref(null)
     const token = ref(null)
+    const isLoading = ref(false)
+
+    // Computed: Check if user is logged in
+    const isLoggedIn = computed(() => {
+        return !!currentUser.value && !!token.value
+    })
 
     const register = async (registerData) => {
+        isLoading.value = true
         try {
             const response = await authAPI.register(registerData)
-            const { token: authToken, id, username, nickname, avatarUrl } = response.data
+            const { token: authToken, id, username, nickname, avatarUrl, email, phone } = response.data
 
             currentUser.value = {
                 id,
                 username,
                 nickname,
-                avatar: avatarUrl
+                avatar: avatarUrl,
+                email,
+                phone,
+                bio: '',
+                showOnlineStatus: true,
+                showLastSeen: true,
+                showEmail: false
             }
             token.value = authToken
 
@@ -26,19 +39,28 @@ export const useUserStore = defineStore('user', () => {
             return currentUser.value
         } catch (error) {
             throw error.response?.data?.message || error.message || 'Registration failed'
+        } finally {
+            isLoading.value = false
         }
     }
 
     const login = async (usernameOrEmail, password) => {
+        isLoading.value = true
         try {
             const response = await authAPI.login(usernameOrEmail, password)
-            const { token: authToken, id, username, nickname, avatarUrl } = response.data
+            const { token: authToken, id, username, nickname, avatarUrl, email, phone } = response.data
 
             currentUser.value = {
                 id,
                 username,
                 nickname,
-                avatar: avatarUrl
+                avatar: avatarUrl,
+                email,
+                phone,
+                bio: '',
+                showOnlineStatus: true,
+                showLastSeen: true,
+                showEmail: false
             }
             token.value = authToken
 
@@ -49,6 +71,8 @@ export const useUserStore = defineStore('user', () => {
             return currentUser.value
         } catch (error) {
             throw error.response?.data?.message || error.message || 'Login failed'
+        } finally {
+            isLoading.value = false
         }
     }
 
@@ -77,12 +101,64 @@ export const useUserStore = defineStore('user', () => {
         }
     }
 
+    const updateProfile = async (profileData) => {
+        isLoading.value = true
+        try {
+            // In real app, call API
+            // await userAPI.updateProfile(currentUser.value.id, profileData.nickname, profileData.avatar)
+
+            currentUser.value = {
+                ...currentUser.value,
+                ...profileData
+            }
+
+            // Persist to localStorage
+            localStorage.setItem('user', JSON.stringify(currentUser.value))
+
+            return currentUser.value
+        } catch (error) {
+            throw error.response?.data?.message || error.message || 'Update failed'
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const updateAvatar = async (avatarData) => {
+        try {
+            // In real app, upload avatar and get URL
+            // const response = await fileAPI.uploadFile(avatarFile)
+            // const avatarUrl = response.data.url
+
+            currentUser.value.avatar = avatarData
+            localStorage.setItem('user', JSON.stringify(currentUser.value))
+
+            return currentUser.value
+        } catch (error) {
+            throw error.response?.data?.message || error.message || 'Avatar update failed'
+        }
+    }
+
+    const updatePrivacySettings = (settings) => {
+        currentUser.value = {
+            ...currentUser.value,
+            showOnlineStatus: settings.showOnlineStatus,
+            showLastSeen: settings.showLastSeen,
+            showEmail: settings.showEmail
+        }
+        localStorage.setItem('user', JSON.stringify(currentUser.value))
+    }
+
     return {
         currentUser,
         token,
+        isLoading,
+        isLoggedIn,
         register,
         login,
         loadUserFromStorage,
-        logout
+        logout,
+        updateProfile,
+        updateAvatar,
+        updatePrivacySettings
     }
 })

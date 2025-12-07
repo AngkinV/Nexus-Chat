@@ -2,49 +2,147 @@
   <el-dialog
     v-model="dialogVisible"
     :title="$t('contact.addContact')"
-    width="400px"
-    class="custom-dialog"
+    width="450px"
+    class="add-contact-dialog"
     :before-close="handleClose"
+    :close-on-click-modal="false"
   >
-    <div class="add-contact-form">
-      <el-input
-        v-model="searchQuery"
-        :placeholder="$t('contact.searchPlaceholder')"
-        class="search-input"
-        @keyup.enter="handleSearch"
-      >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-        <template #append>
-          <el-button @click="handleSearch">{{ $t('common.search') }}</el-button>
-        </template>
-      </el-input>
-
-      <div v-if="searchResult" class="search-result">
-        <div class="user-info">
-          <el-avatar :size="40" :src="searchResult.avatar || defaultAvatar" />
-          <div class="user-details">
-            <span class="nickname">{{ searchResult.nickname }}</span>
-            <span class="username">@{{ searchResult.username }}</span>
-          </div>
-        </div>
-        <el-button type="primary" size="small" @click="addContact">
-          {{ $t('contact.add') }}
+    <div class="add-contact-content">
+      <!-- Search Section -->
+      <div class="search-section">
+        <el-input
+          v-model="searchQuery"
+          :placeholder="$t('contact.searchPlaceholder')"
+          class="search-input"
+          @keyup.enter="handleSearch"
+          clearable
+          size="large"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <el-button 
+          type="primary" 
+          @click="handleSearch" 
+          :loading="isSearching"
+          :disabled="!searchQuery.trim()"
+          size="large"
+        >
+          {{ $t('common.search') }}
         </el-button>
       </div>
 
-      <div v-if="hasSearched && !searchResult" class="no-result">
-        <el-empty :description="$t('contact.notFound')" :image-size="60" />
+      <div class="search-hint" v-if="!hasSearched">
+        <el-icon class="hint-icon"><InfoFilled /></el-icon>
+        <span>{{ $t('contact.searchHint') }}</span>
+      </div>
+
+      <!-- Search Results -->
+      <div v-if="isSearching" class="loading-state">
+        <el-icon class="loading-icon is-loading"><Loading /></el-icon>
+        <span>{{ $t('contact.searching') }}</span>
+      </div>
+
+      <div v-else-if="searchResults.length > 0" class="search-results">
+        <div class="results-title">{{ $t('contact.searchResults') }}</div>
+        <el-scrollbar max-height="300px">
+          <div
+            v-for="user in searchResults"
+            :key="user.id"
+            class="user-result-card"
+          >
+            <div class="user-left">
+              <el-avatar :size="50" :src="user.avatar || defaultAvatar" />
+              <div class="user-details">
+                <span class="user-nickname">{{ user.nickname }}</span>
+                <span class="user-username">@{{ user.username }}</span>
+                <span v-if="user.email" class="user-email">{{ user.email }}</span>
+              </div>
+            </div>
+            <div class="user-right">
+              <el-button 
+                v-if="!isContactAdded(user.id)"
+                type="primary"
+                size="small"
+                @click="addContact(user)"
+                :loading="addingUserId === user.id"
+              >
+                <el-icon><Plus /></el-icon>
+                {{ $t('contact.add') }}
+              </el-button>
+              <el-button v-else type="success" size="small" disabled>
+                <el-icon><Check /></el-icon>
+                {{ $t('contact.added') }}
+              </el-button>
+            </div>
+          </div>
+        </el-scrollbar>
+      </div>
+
+      <div v-else-if="hasSearched && searchResults.length === 0" class="no-results">
+        <div class="no-results-illustration">
+          <el-icon class="sad-icon"><Warning /></el-icon>
+        </div>
+        <span class="no-results-text">{{ $t('contact.notFound') }}</span>
+        <span class="no-results-hint">{{ $t('contact.tryAgain') }}</span>
+      </div>
+
+      <!-- Quick Add Section -->
+      <div class="quick-add-section" v-if="!hasSearched">
+        <div class="section-divider">
+          <span>{{ $t('contact.orAddById') }}</span>
+        </div>
+        
+        <el-input
+          v-model="directUserId"
+          :placeholder="$t('contact.enterUserId')"
+          class="direct-id-input"
+          clearable
+        >
+          <template #append>
+            <el-button 
+              type="primary" 
+              @click="addContactById"
+              :disabled="!directUserId.trim()"
+            >
+              {{ $t('contact.add') }}
+            </el-button>
+          </template>
+        </el-input>
+      </div>
+
+      <!-- Recommended Contacts -->
+      <div v-if="!hasSearched && recommendedUsers.length > 0" class="recommended-section">
+        <div class="section-title">
+          <el-icon><Star /></el-icon>
+          {{ $t('contact.recommended') }}
+        </div>
+        <div class="recommended-list">
+          <div
+            v-for="user in recommendedUsers"
+            :key="user.id"
+            class="recommended-user"
+            @click="quickAddContact(user)"
+          >
+            <el-avatar :size="40" :src="user.avatar || defaultAvatar" />
+            <span class="recommended-name">{{ user.nickname }}</span>
+            <el-icon class="add-icon"><Plus /></el-icon>
+          </div>
+        </div>
       </div>
     </div>
   </el-dialog>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+import { ref, computed, watch } from 'vue'
+import { Search, Plus, Check, InfoFilled, Loading, Warning, Star } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { useContactStore } from '@/stores/contact'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   visible: Boolean
@@ -52,15 +150,35 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'added'])
 
+const contactStore = useContactStore()
+
 const dialogVisible = computed({
   get: () => props.visible,
   set: (val) => emit('update:visible', val)
 })
 
 const searchQuery = ref('')
-const searchResult = ref(null)
+const directUserId = ref('')
+const searchResults = ref([])
 const hasSearched = ref(false)
+const isSearching = ref(false)
+const addingUserId = ref(null)
+const addedUserIds = ref([])
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+
+// Mock recommended users
+const recommendedUsers = ref([
+  { id: 201, nickname: 'John Doe', username: 'johnd', avatar: '' },
+  { id: 202, nickname: 'Jane Smith', username: 'janes', avatar: '' },
+  { id: 203, nickname: 'Mike Wilson', username: 'mikew', avatar: '' }
+])
+
+// Reset on dialog open
+watch(() => props.visible, (val) => {
+  if (val) {
+    resetForm()
+  }
+})
 
 const handleClose = () => {
   dialogVisible.value = false
@@ -69,59 +187,180 @@ const handleClose = () => {
 
 const resetForm = () => {
   searchQuery.value = ''
-  searchResult.value = null
+  directUserId.value = ''
+  searchResults.value = []
   hasSearched.value = false
+  isSearching.value = false
+  addingUserId.value = null
 }
 
-const handleSearch = () => {
+const isContactAdded = (userId) => {
+  return addedUserIds.value.includes(userId) || 
+         contactStore.contacts.some(c => c.id === userId)
+}
+
+const handleSearch = async () => {
   if (!searchQuery.value.trim()) return
   
+  isSearching.value = true
   hasSearched.value = true
-  // Mock search logic
-  // In real app, this would call an API
-  if (searchQuery.value.toLowerCase() === 'test' || searchQuery.value === '123') {
-    searchResult.value = {
-      id: 999,
-      nickname: 'Test User',
-      username: 'testuser',
-      avatar: ''
-    }
-  } else {
-    searchResult.value = null
+  
+  try {
+    // Simulate API search
+    await new Promise(resolve => setTimeout(resolve, 800))
+    
+    // Mock search results based on query
+    const query = searchQuery.value.toLowerCase()
+    const mockUsers = [
+      { id: 301, nickname: 'Test User', username: 'testuser', email: 'test@example.com', avatar: '' },
+      { id: 302, nickname: 'Alice Chen', username: 'alicec', email: 'alice@example.com', avatar: '' },
+      { id: 303, nickname: 'Bob Wang', username: 'bobw', email: 'bob@example.com', avatar: '' },
+      { id: 304, nickname: 'Charlie Li', username: 'charliel', email: 'charlie@example.com', avatar: '' }
+    ]
+    
+    searchResults.value = mockUsers.filter(user => 
+      user.nickname.toLowerCase().includes(query) ||
+      user.username.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query)
+    )
+  } catch (error) {
+    ElMessage.error(t('contact.searchFailed'))
+  } finally {
+    isSearching.value = false
   }
 }
 
-const addContact = () => {
-  if (!searchResult.value) return
+const addContact = async (user) => {
+  addingUserId.value = user.id
   
-  // Mock add contact logic
-  emit('added', searchResult.value)
-  ElMessage.success('Contact added successfully')
-  handleClose()
+  try {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    contactStore.addContact({
+      id: user.id,
+      nickname: user.nickname,
+      username: user.username,
+      avatar: user.avatar,
+      isOnline: false
+    })
+    
+    addedUserIds.value.push(user.id)
+    emit('added', user)
+    ElMessage.success(t('contact.addSuccess', { name: user.nickname }))
+  } catch (error) {
+    ElMessage.error(t('contact.addFailed'))
+  } finally {
+    addingUserId.value = null
+  }
+}
+
+const quickAddContact = async (user) => {
+  await addContact(user)
+}
+
+const addContactById = async () => {
+  if (!directUserId.value.trim()) return
+  
+  // Mock finding user by ID
+  const mockUser = {
+    id: parseInt(directUserId.value) || Date.now(),
+    nickname: `User ${directUserId.value}`,
+    username: `user${directUserId.value}`,
+    avatar: ''
+  }
+  
+  await addContact(mockUser)
+  directUserId.value = ''
 }
 </script>
 
 <style scoped>
-.add-contact-form {
+.add-contact-dialog :deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+.add-contact-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 10px 0;
 }
 
-.search-result {
+.search-section {
+  display: flex;
+  gap: 10px;
+}
+
+.search-input {
+  flex: 1;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  border-radius: 24px;
+  padding-left: 15px;
+}
+
+.search-hint {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px;
-  background: #f5f5f5;
-  border-radius: 8px;
+  gap: 8px;
+  padding: 12px 15px;
+  background: #f0f7ff;
+  border-radius: 10px;
+  color: #3390ec;
+  font-size: 13px;
 }
 
-.user-info {
+.hint-icon {
+  font-size: 16px;
+}
+
+.loading-state {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 10px;
+  padding: 40px;
+  color: #666;
+}
+
+.loading-icon {
+  font-size: 32px;
+  color: #3390ec;
+}
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.results-title {
+  font-size: 13px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-result-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.user-result-card:hover {
+  background: #f0f2f5;
+  transform: translateY(-1px);
+}
+
+.user-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .user-details {
@@ -129,20 +368,160 @@ const addContact = () => {
   flex-direction: column;
 }
 
-.nickname {
+.user-nickname {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   color: #1c1c1e;
 }
 
-.username {
-  font-size: 12px;
-  color: #707579;
+.user-username {
+  font-size: 13px;
+  color: #3390ec;
 }
 
-.no-result {
+.user-email {
+  font-size: 12px;
+  color: #999;
+}
+
+.no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  gap: 10px;
+}
+
+.no-results-illustration {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #f5f5f5;
   display: flex;
   justify-content: center;
-  padding: 20px 0;
+  align-items: center;
+}
+
+.sad-icon {
+  font-size: 40px;
+  color: #ccc;
+}
+
+.no-results-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.no-results-hint {
+  font-size: 13px;
+  color: #999;
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  color: #999;
+  font-size: 12px;
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e5e5;
+}
+
+.quick-add-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.direct-id-input :deep(.el-input-group__append) {
+  background: #3390ec;
+  border-color: #3390ec;
+}
+
+.direct-id-input :deep(.el-input-group__append .el-button) {
+  color: white;
+}
+
+.recommended-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.section-title .el-icon {
+  color: #ffc107;
+}
+
+.recommended-list {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 5px 0;
+}
+
+.recommended-user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+  position: relative;
+}
+
+.recommended-user:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.recommended-user:hover .add-icon {
+  opacity: 1;
+}
+
+.recommended-name {
+  font-size: 12px;
+  color: #333;
+  text-align: center;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3390ec;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 </style>
