@@ -136,11 +136,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Search, Plus, Check, InfoFilled, Loading, Warning, Star } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useContactStore } from '@/stores/contact'
+import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
+import { userAPI } from '@/services/api'
 
 const { t } = useI18n()
 
@@ -151,6 +153,12 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'added'])
 
 const contactStore = useContactStore()
+const userStore = useUserStore()
+
+// Ensure user is loaded from storage
+if (!userStore.currentUser) {
+  userStore.loadUserFromStorage()
+}
 
 const dialogVisible = computed({
   get: () => props.visible,
@@ -166,19 +174,38 @@ const addingUserId = ref(null)
 const addedUserIds = ref([])
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
-// Mock recommended users
-const recommendedUsers = ref([
-  { id: 201, nickname: 'John Doe', username: 'johnd', avatar: '' },
-  { id: 202, nickname: 'Jane Smith', username: 'janes', avatar: '' },
-  { id: 203, nickname: 'Mike Wilson', username: 'mikew', avatar: '' }
-])
+// Recommended users from API
+const recommendedUsers = ref([])
+
+// Get current user ID
+const currentUserId = computed(() => userStore.currentUser?.id)
+
+// Load recommended users on mount
+onMounted(async () => {
+  await loadRecommendedUsers()
+})
 
 // Reset on dialog open
-watch(() => props.visible, (val) => {
+watch(() => props.visible, async (val) => {
   if (val) {
     resetForm()
+    await loadRecommendedUsers()
   }
 })
+
+const loadRecommendedUsers = async () => {
+  if (!currentUserId.value) return
+
+  try {
+    const response = await userAPI.getRecommendedUsers(currentUserId.value, 5)
+    recommendedUsers.value = (response.data || []).filter(
+      user => user.id !== currentUserId.value && !isContactAdded(user.id)
+    )
+  } catch (error) {
+    console.error('Failed to load recommended users:', error)
+    recommendedUsers.value = []
+  }
+}
 
 const handleClose = () => {
   dialogVisible.value = false
@@ -195,60 +222,52 @@ const resetForm = () => {
 }
 
 const isContactAdded = (userId) => {
-  return addedUserIds.value.includes(userId) || 
-         contactStore.contacts.some(c => c.id === userId)
+  return addedUserIds.value.includes(userId) ||
+         contactStore.contacts.some(c => c.id === userId || c.userId === userId)
 }
 
 const handleSearch = async () => {
   if (!searchQuery.value.trim()) return
-  
+
   isSearching.value = true
   hasSearched.value = true
-  
+
   try {
-    // Simulate API search
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    // Mock search results based on query
-    const query = searchQuery.value.toLowerCase()
-    const mockUsers = [
-      { id: 301, nickname: 'Test User', username: 'testuser', email: 'test@example.com', avatar: '' },
-      { id: 302, nickname: 'Alice Chen', username: 'alicec', email: 'alice@example.com', avatar: '' },
-      { id: 303, nickname: 'Bob Wang', username: 'bobw', email: 'bob@example.com', avatar: '' },
-      { id: 304, nickname: 'Charlie Li', username: 'charliel', email: 'charlie@example.com', avatar: '' }
-    ]
-    
-    searchResults.value = mockUsers.filter(user => 
-      user.nickname.toLowerCase().includes(query) ||
-      user.username.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query)
+    const response = await userAPI.searchUsers(searchQuery.value.trim())
+    // Filter out current user from results
+    searchResults.value = (response.data || []).filter(
+      user => user.id !== currentUserId.value
     )
   } catch (error) {
+    console.error('Search failed:', error)
     ElMessage.error(t('contact.searchFailed'))
+    searchResults.value = []
   } finally {
     isSearching.value = false
   }
 }
 
 const addContact = async (user) => {
+  // Ensure user is loaded
+  if (!userStore.currentUser) {
+    userStore.loadUserFromStorage()
+  }
+
+  const userId = userStore.currentUser?.id
+  if (!userId) {
+    ElMessage.error(t('common.notLoggedIn'))
+    return
+  }
+
   addingUserId.value = user.id
-  
+
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    contactStore.addContact({
-      id: user.id,
-      nickname: user.nickname,
-      username: user.username,
-      avatar: user.avatar,
-      isOnline: false
-    })
-    
+    await contactStore.addContactRequest(userId, user.id)
     addedUserIds.value.push(user.id)
     emit('added', user)
-    ElMessage.success(t('contact.addSuccess', { name: user.nickname }))
+    ElMessage.success(t('contact.addSuccess', { name: user.nickname || user.username }))
   } catch (error) {
+    console.error('Failed to add contact:', error)
     ElMessage.error(t('contact.addFailed'))
   } finally {
     addingUserId.value = null
@@ -261,17 +280,40 @@ const quickAddContact = async (user) => {
 
 const addContactById = async () => {
   if (!directUserId.value.trim()) return
-  
-  // Mock finding user by ID
-  const mockUser = {
-    id: parseInt(directUserId.value) || Date.now(),
-    nickname: `User ${directUserId.value}`,
-    username: `user${directUserId.value}`,
-    avatar: ''
+
+  const visitorId = parseInt(directUserId.value.trim())
+  if (isNaN(visitorId)) {
+    ElMessage.error(t('contact.invalidUserId'))
+    return
   }
-  
-  await addContact(mockUser)
-  directUserId.value = ''
+
+  // Ensure user is loaded
+  if (!userStore.currentUser) {
+    userStore.loadUserFromStorage()
+  }
+
+  const userId = userStore.currentUser?.id
+  if (!userId) {
+    ElMessage.error(t('common.notLoggedIn'))
+    return
+  }
+
+  if (visitorId === userId) {
+    ElMessage.error(t('contact.cannotAddSelf'))
+    return
+  }
+
+  try {
+    // First get user info
+    const response = await userAPI.getUserById(visitorId)
+    if (response.data) {
+      await addContact(response.data)
+      directUserId.value = ''
+    }
+  } catch (error) {
+    console.error('Failed to find user:', error)
+    ElMessage.error(t('contact.userNotFound'))
+  }
 }
 </script>
 

@@ -50,7 +50,7 @@ const filteredChats = computed(() => {
 })
 
 const selectChat = (chat) => {
-  chatStore.setActiveChat(chat)
+  chatStore.toggleActiveChat(chat)
 }
 
 const formatTime = (time) => {

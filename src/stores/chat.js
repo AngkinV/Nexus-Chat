@@ -4,53 +4,10 @@ import { chatAPI } from '@/services/api'
 
 export const useChatStore = defineStore('chat', () => {
     const activeChat = ref(null)
-    const chats = ref([
-        {
-            id: 1,
-            name: 'Nexus Team',
-            avatar: '',
-            lastMessage: 'Welcome to Nexus Chat!',
-            lastMessageTime: new Date(),
-            unreadCount: 2,
-            online: true,
-            type: 'GROUP',
-            memberCount: 5,
-            description: 'Official Nexus Chat team group'
-        },
-        {
-            id: 2,
-            name: 'Alice Smith',
-            avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-            lastMessage: 'Hey, how are you?',
-            lastMessageTime: new Date(Date.now() - 3600000),
-            unreadCount: 0,
-            online: false,
-            type: 'DIRECT'
-        }
-    ])
+    const chats = ref([])
+    const isLoading = ref(false)
 
-    const messages = ref([
-        {
-            id: 1,
-            chatId: 1,
-            senderName: 'System',
-            content: 'Welcome to Nexus Chat!',
-            timestamp: new Date(Date.now() - 86400000),
-            type: 'TEXT',
-            isSelf: false,
-            read: true
-        },
-        {
-            id: 2,
-            chatId: 1,
-            senderName: 'Me',
-            content: 'Thanks! Looks great.',
-            timestamp: new Date(Date.now() - 86300000),
-            type: 'TEXT',
-            isSelf: true,
-            read: true
-        }
-    ])
+    const messages = ref([])
 
     // Computed: Get all group chats
     const groupChats = computed(() => {
@@ -67,6 +24,34 @@ export const useChatStore = defineStore('chat', () => {
         return chats.value.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0)
     })
 
+    // Fetch chats from backend
+    const fetchChats = async (userId) => {
+        isLoading.value = true
+        try {
+            const response = await chatAPI.getUserChats(userId)
+            const chatList = response.data || []
+
+            // Transform backend data to frontend format
+            chats.value = chatList.map(chat => ({
+                id: chat.id,
+                name: chat.name,
+                avatar: chat.members?.find(m => m.id !== userId)?.avatarUrl || '',
+                lastMessage: chat.lastMessage?.content || '',
+                lastMessageTime: chat.lastMessage?.createdAt || chat.lastMessageAt,
+                unreadCount: chat.unreadCount || 0,
+                online: chat.members?.find(m => m.id !== userId)?.isOnline || false,
+                type: chat.type === 'direct' ? 'DIRECT' : 'GROUP',
+                members: chat.members,
+                memberCount: chat.members?.length || 0,
+                contactId: chat.type === 'direct' ? chat.members?.find(m => m.id !== userId)?.id : null
+            }))
+        } catch (error) {
+            console.error('Failed to fetch chats:', error)
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     const setActiveChat = (chat) => {
         activeChat.value = chat
         // Mark as read when opening chat
@@ -75,6 +60,17 @@ export const useChatStore = defineStore('chat', () => {
             if (chatIndex !== -1) {
                 chats.value[chatIndex].unreadCount = 0
             }
+        }
+    }
+
+    // Toggle chat: if same chat is clicked, close it; otherwise open the new chat
+    const toggleActiveChat = (chat) => {
+        if (activeChat.value?.id === chat.id) {
+            // Same chat clicked, close it
+            activeChat.value = null
+        } else {
+            // Different chat or no chat open, set as active and clear unread
+            setActiveChat(chat)
         }
     }
 
@@ -205,10 +201,13 @@ export const useChatStore = defineStore('chat', () => {
         activeChat,
         chats,
         messages,
+        isLoading,
         groupChats,
         directChats,
         totalUnreadCount,
+        fetchChats,
         setActiveChat,
+        toggleActiveChat,
         sendMessage,
         createGroup,
         createDirectChat,

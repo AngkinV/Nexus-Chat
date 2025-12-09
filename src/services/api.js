@@ -38,11 +38,26 @@ export const userAPI = {
 
     getAllUsers: () => apiClient.get('/users'),
 
-    updateProfile: (id, nickname, avatarUrl) =>
-        apiClient.put(`/users/${id}/profile`, { nickname, avatarUrl }),
+    searchUsers: (query) => apiClient.get('/users/search', { params: { query } }),
+
+    getRecommendedUsers: (userId, limit = 10) =>
+        apiClient.get('/users/recommended', { params: { userId, limit } }),
+
+    getUserProfile: (id) => apiClient.get(`/users/${id}/profile`),
+
+    getUserProfileForViewer: (id, viewerId) =>
+        apiClient.get(`/users/${id}/profile/view`, { params: { viewerId } }),
+
+    updateProfile: (id, data) =>
+        apiClient.put(`/users/${id}/profile`, data),
 
     updateOnlineStatus: (id, isOnline) =>
-        apiClient.put(`/users/${id}/status`, null, { params: { isOnline } })
+        apiClient.put(`/users/${id}/status`, null, { params: { isOnline } }),
+
+    updatePrivacySettings: (id, settings) =>
+        apiClient.put(`/users/${id}/privacy`, settings),
+
+    getUserStats: (id) => apiClient.get(`/users/${id}/stats`)
 }
 
 // Chat API
@@ -77,12 +92,20 @@ export const messageAPI = {
 // Contact API
 export const contactAPI = {
     addContact: (userId, contactUserId) =>
-        apiClient.post('/contacts', null, { params: { userId, contactUserId } }),
+        apiClient.post('/contacts', { userId, contactUserId }),
 
     removeContact: (userId, contactUserId) =>
-        apiClient.delete('/contacts', { params: { userId, contactUserId } }),
+        apiClient.delete('/contacts', { data: { userId, contactUserId } }),
 
-    getContacts: (userId) => apiClient.get(`/contacts/user/${userId}`)
+    getContacts: (userId) => apiClient.get(`/contacts/user/${userId}`),
+
+    getContactsDetailed: (userId) => apiClient.get(`/contacts/user/${userId}/detailed`),
+
+    checkIsContact: (userId, contactUserId) =>
+        apiClient.get('/contacts/check', { params: { userId, contactUserId } }),
+
+    getMutualContacts: (userId1, userId2) =>
+        apiClient.get('/contacts/mutual', { params: { userId1, userId2 } })
 }
 
 // File API

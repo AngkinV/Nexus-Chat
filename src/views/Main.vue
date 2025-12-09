@@ -7,10 +7,18 @@
 </template>
 
 <script setup>
-import { ref, provide } from 'vue'
+import { ref, provide, onMounted } from 'vue'
 import LeftPanel from '@/components/layout/LeftPanel.vue'
 import MiddlePanel from '@/components/layout/MiddlePanel.vue'
 import RightPanel from '@/components/layout/RightPanel.vue'
+import { useUserStore } from '@/stores/user'
+import { useContactStore } from '@/stores/contact'
+import { useChatStore } from '@/stores/chat'
+import websocket from '@/services/websocket'
+
+const userStore = useUserStore()
+const contactStore = useContactStore()
+const chatStore = useChatStore()
 
 const showRightPanel = ref(false)
 
@@ -20,6 +28,29 @@ provide('toggleRightPanel', () => {
 })
 provide('showRightPanel', showRightPanel)
 
+// Load data on mount
+onMounted(async () => {
+  // Ensure user is loaded
+  if (!userStore.currentUser) {
+    userStore.loadUserFromStorage()
+  }
+
+  const userId = userStore.currentUser?.id
+  if (userId) {
+    try {
+      // Load contacts from backend
+      await contactStore.fetchContacts(userId)
+
+      // Load chats from backend
+      await chatStore.fetchChats(userId)
+
+      // Connect WebSocket
+      websocket.connect(userId)
+    } catch (error) {
+      console.error('Failed to load data:', error)
+    }
+  }
+})
 </script>
 
 <style scoped>

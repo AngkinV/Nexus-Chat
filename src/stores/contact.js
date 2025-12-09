@@ -107,7 +107,19 @@ export const useContactStore = defineStore('contact', () => {
         try {
             const response = await contactAPI.addContact(userId, contactUserId)
             if (response.data) {
-                addContact(response.data)
+                // Backend returns ContactDTO with userId field
+                const contactData = response.data
+                addContact({
+                    id: contactData.userId,
+                    username: contactData.username,
+                    nickname: contactData.nickname,
+                    avatarUrl: contactData.avatarUrl,
+                    avatar: contactData.avatarUrl,
+                    isOnline: contactData.isOnline,
+                    lastSeen: contactData.lastSeen,
+                    email: contactData.email,
+                    phone: contactData.phone
+                })
             }
             return response.data
         } catch (error) {

@@ -28,7 +28,8 @@
         "emailExists": "Email already exists",
         "usernameExists": "Username already exists",
         "passwordMismatch": "Passwords do not match",
-        "invalidEmail": "Please enter a valid email address"
+        "invalidEmail": "Please enter a valid email address",
+        "registerSuccess": "Registration successful! Please login."
     },
     "chat": {
         "newChat": "New Chat",
@@ -77,7 +78,10 @@
         "searchFailed": "Search failed, please try again",
         "orAddById": "Or add directly by User ID",
         "enterUserId": "Enter User ID",
-        "recommended": "Recommended Contacts"
+        "recommended": "Recommended Contacts",
+        "invalidUserId": "Please enter a valid User ID",
+        "cannotAddSelf": "You cannot add yourself as a contact",
+        "userNotFound": "User not found"
     },
     "group": {
         "createGroup": "Create Group",
@@ -137,6 +141,7 @@
         "create": "Create",
         "search": "Search",
         "enabled": "Enabled",
-        "disabled": "Disabled"
+        "disabled": "Disabled",
+        "notLoggedIn": "Please log in first"
     }
 }

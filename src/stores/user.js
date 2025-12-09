@@ -16,10 +16,10 @@ export const useUserStore = defineStore('user', () => {
         isLoading.value = true
         try {
             const response = await authAPI.register(registerData)
-            const { token: authToken, id, username, nickname, avatarUrl, email, phone } = response.data
+            const { token: authToken, userId, username, nickname, avatarUrl, email, phone } = response.data
 
             currentUser.value = {
-                id,
+                id: userId,
                 username,
                 nickname,
                 avatar: avatarUrl,
@@ -48,10 +48,10 @@ export const useUserStore = defineStore('user', () => {
         isLoading.value = true
         try {
             const response = await authAPI.login(usernameOrEmail, password)
-            const { token: authToken, id, username, nickname, avatarUrl, email, phone } = response.data
+            const { token: authToken, userId, username, nickname, avatarUrl, email, phone } = response.data
 
             currentUser.value = {
-                id,
+                id: userId,
                 username,
                 nickname,
                 avatar: avatarUrl,
