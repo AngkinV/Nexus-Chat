@@ -8,8 +8,17 @@
     :close-on-click-modal="false"
   >
     <div class="edit-profile-content">
-      <!-- Avatar Section -->
-      <div class="avatar-section">
+      <!-- Avatar Section with Custom Background -->
+      <div
+        class="avatar-section"
+        :style="avatarSectionStyle"
+      >
+        <!-- Background Change Button -->
+        <div class="background-change-btn" @click="showBackgroundOptions = true">
+          <el-icon><Picture /></el-icon>
+          <span>更换背景</span>
+        </div>
+
         <div class="avatar-container">
           <el-upload
             class="avatar-uploader"
@@ -123,6 +132,13 @@
           </div>
           <div class="privacy-item">
             <div class="privacy-left">
+              <span class="privacy-label">{{ $t('profile.showPhone') }}</span>
+              <span class="privacy-desc">{{ $t('profile.showPhoneDesc') }}</span>
+            </div>
+            <el-switch v-model="form.showPhone" />
+          </div>
+          <div class="privacy-item">
+            <div class="privacy-left">
               <span class="privacy-label">{{ $t('profile.showEmail') }}</span>
               <span class="privacy-desc">{{ $t('profile.showEmailDesc') }}</span>
             </div>
@@ -141,11 +157,61 @@
       </span>
     </template>
   </el-dialog>
+
+  <!-- Background Options Dialog -->
+  <el-dialog
+    v-model="showBackgroundOptions"
+    title="选择背景"
+    width="90%"
+    :style="{ maxWidth: '500px' }"
+    append-to-body
+  >
+    <div class="background-options">
+      <!-- Upload Custom Background -->
+      <div class="option-section">
+        <h4>上传自定义背景</h4>
+        <input
+          type="file"
+          ref="bgFileInput"
+          accept="image/*"
+          style="display: none"
+          @change="handleBackgroundImageUpload"
+        >
+        <el-button @click="$refs.bgFileInput.click()" class="upload-btn">
+          <el-icon><Upload /></el-icon>
+          选择图片
+        </el-button>
+      </div>
+
+      <!-- Preset Gradients -->
+      <div class="option-section">
+        <h4>预设渐变背景</h4>
+        <div class="gradient-grid">
+          <div
+            v-for="(gradient, index) in presetGradients"
+            :key="index"
+            class="gradient-item"
+            :style="{ background: gradient.style }"
+            @click="selectGradient(gradient.style)"
+          >
+            <div v-if="form.profileBackground === gradient.style" class="selected-check">
+              <el-icon><Check /></el-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <template #footer>
+      <el-button @click="showBackgroundOptions = false">取消</el-button>
+      <el-button type="primary" @click="showBackgroundOptions = false">确定</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
-import { Camera, Delete, User, Message, Phone, Lock } from '@element-plus/icons-vue'
+import { Camera, Delete, User, Message, Phone, Lock, Picture, Upload, Check } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
@@ -167,6 +233,24 @@ const dialogVisible = computed({
 const formRef = ref(null)
 const isSaving = ref(false)
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+const showBackgroundOptions = ref(false)
+const bgFileInput = ref(null)
+
+// 预设渐变背景
+const presetGradients = [
+  { style: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }, // 原紫色
+  { style: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 粉红
+  { style: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }, // 蓝色
+  { style: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }, // 绿色
+  { style: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }, // 橙粉
+  { style: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' }, // 青紫
+  { style: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' }, // 淡蓝粉
+  { style: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)' }, // 浅粉
+  { style: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' }, // 橙色
+  { style: 'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)' }, // 红蓝
+  { style: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)' }, // 紫蓝
+  { style: 'linear-gradient(135deg, #f8b500 0%, #fceabb 100%)' }, // 金黄
+]
 
 const form = ref({
   avatar: '',
@@ -177,7 +261,9 @@ const form = ref({
   email: '',
   showOnlineStatus: true,
   showLastSeen: true,
-  showEmail: false
+  showPhone: false,
+  showEmail: false,
+  profileBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' // 默认背景
 })
 
 const rules = reactive({
@@ -188,6 +274,27 @@ const rules = reactive({
   email: [
     { type: 'email', message: t('auth.invalidEmail'), trigger: 'blur' }
   ]
+})
+
+// 计算头像区域背景样式
+const avatarSectionStyle = computed(() => {
+  const bg = form.value.profileBackground
+  if (bg && (bg.startsWith('http') || bg.startsWith('data:image'))) {
+    // 如果是图片URL或base64图片
+    return {
+      backgroundImage: `url(${bg})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center'
+    }
+  } else if (bg) {
+    // 如果是渐变
+    return {
+      background: bg
+    }
+  }
+  return {
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+  }
 })
 
 watch(() => props.visible, (val) => {
@@ -201,7 +308,9 @@ watch(() => props.visible, (val) => {
       email: userStore.currentUser.email || '',
       showOnlineStatus: userStore.currentUser.showOnlineStatus ?? true,
       showLastSeen: userStore.currentUser.showLastSeen ?? true,
-      showEmail: userStore.currentUser.showEmail ?? false
+      showPhone: userStore.currentUser.showPhone ?? false,
+      showEmail: userStore.currentUser.showEmail ?? false,
+      profileBackground: userStore.currentUser.profileBackground || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     }
   }
 })
@@ -226,6 +335,36 @@ const removeAvatar = () => {
   form.value.avatar = ''
 }
 
+// 选择预设渐变
+const selectGradient = (gradientStyle) => {
+  form.value.profileBackground = gradientStyle
+}
+
+// 处理背景图片上传
+const handleBackgroundImageUpload = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  if (!file.type.startsWith('image/')) {
+    ElMessage.error('请上传图片文件')
+    return
+  }
+
+  // 最大5MB
+  if (file.size > 5 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过5MB')
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    form.value.profileBackground = e.target.result
+    showBackgroundOptions.value = false
+    ElMessage.success('背景已更新')
+  }
+  reader.readAsDataURL(file)
+}
+
 const saveProfile = async () => {
   if (!formRef.value) return
   
@@ -248,7 +387,9 @@ const saveProfile = async () => {
         email: form.value.email,
         showOnlineStatus: form.value.showOnlineStatus,
         showLastSeen: form.value.showLastSeen,
-        showEmail: form.value.showEmail
+        showPhone: form.value.showPhone,
+        showEmail: form.value.showEmail,
+        profileBackground: form.value.profileBackground
       }
 
       // Persist to localStorage
@@ -266,12 +407,38 @@ const saveProfile = async () => {
 }
 </script>
 
-<style scoped>
-.edit-profile-dialog :deep(.el-dialog__body) {
-  padding: 0;
-  max-height: 70vh;
-  overflow-y: auto;
+<style>
+/* 全局样式 - 确保对话框本身固定 */
+.edit-profile-dialog {
+  /* 对话框固定不动 */
 }
+
+.edit-profile-dialog .el-dialog {
+  margin: 0 !important;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+.edit-profile-dialog .el-dialog__body {
+  padding: 0 !important;
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+  /* 隐藏滚动条 */
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.edit-profile-dialog .el-dialog__body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+</style>
+
+<style scoped>
+/* 对话框主体样式 - 只有内容滚动 */
 
 .edit-profile-content {
   display: flex;
@@ -279,10 +446,42 @@ const saveProfile = async () => {
 }
 
 .avatar-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 30px;
   display: flex;
   justify-content: center;
+  position: relative;
+  min-height: 200px;
+  transition: background 0.3s ease;
+}
+
+.background-change-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.background-change-btn:hover {
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.background-change-btn .el-icon {
+  font-size: 16px;
 }
 
 .avatar-container {
@@ -427,5 +626,66 @@ const saveProfile = async () => {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+}
+
+/* 背景选择样式 */
+.background-options {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.option-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.upload-btn {
+  width: 100%;
+}
+
+.gradient-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.gradient-item {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.gradient-item:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.selected-check {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #67c23a;
+  font-size: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 600px) {
+  .gradient-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 </style>

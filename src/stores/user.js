@@ -28,7 +28,9 @@ export const useUserStore = defineStore('user', () => {
                 bio: '',
                 showOnlineStatus: true,
                 showLastSeen: true,
-                showEmail: false
+                showPhone: false,
+                showEmail: false,
+                profileBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
             }
             token.value = authToken
 
@@ -60,7 +62,9 @@ export const useUserStore = defineStore('user', () => {
                 bio: '',
                 showOnlineStatus: true,
                 showLastSeen: true,
-                showEmail: false
+                showPhone: false,
+                showEmail: false,
+                profileBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
             }
             token.value = authToken
 
@@ -138,11 +142,26 @@ export const useUserStore = defineStore('user', () => {
         }
     }
 
+    const updateBackground = async (backgroundData) => {
+        try {
+            // In real app, upload to server
+            currentUser.value = {
+                ...currentUser.value,
+                profileBackground: backgroundData
+            }
+            localStorage.setItem('user', JSON.stringify(currentUser.value))
+            return currentUser.value
+        } catch (error) {
+            throw error.message || 'Background update failed'
+        }
+    }
+
     const updatePrivacySettings = (settings) => {
         currentUser.value = {
             ...currentUser.value,
             showOnlineStatus: settings.showOnlineStatus,
             showLastSeen: settings.showLastSeen,
+            showPhone: settings.showPhone,
             showEmail: settings.showEmail
         }
         localStorage.setItem('user', JSON.stringify(currentUser.value))
@@ -159,6 +178,7 @@ export const useUserStore = defineStore('user', () => {
         logout,
         updateProfile,
         updateAvatar,
+        updateBackground,
         updatePrivacySettings
     }
 })

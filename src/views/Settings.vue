@@ -8,17 +8,6 @@
     </div>
 
     <div class="settings-content">
-      <div class="profile-section">
-        <div class="avatar-wrapper">
-          <el-avatar :size="100" :src="userStore.currentUser?.avatar || defaultAvatar" />
-          <div class="edit-btn" @click="openEditProfile">
-            <el-icon><EditPen /></el-icon>
-          </div>
-        </div>
-        <h3>{{ userStore.currentUser?.nickname }}</h3>
-        <p class="status">{{ $t('chat.online') }}</p>
-      </div>
-
       <div class="settings-list">
         <!-- Language Setting -->
         <div class="setting-item">
@@ -47,11 +36,11 @@
         </div>
 
         <!-- Privacy and Security -->
-        <div class="setting-item">
+        <div class="setting-item" @click="showPrivacyDialog = true">
           <div class="setting-icon" style="background: #8774e1">
             <el-icon color="white"><Lock /></el-icon>
           </div>
-          <span>Privacy and Security</span>
+          <span>{{ $t('profile.privacySettings') }}</span>
           <el-icon class="arrow"><ArrowRight /></el-icon>
         </div>
 
@@ -64,18 +53,63 @@
         </div>
       </div>
     </div>
-    
-    <EditProfileModal v-model:visible="showEditProfile" />
+
+    <!-- Privacy Settings Dialog -->
+    <el-dialog
+      v-model="showPrivacyDialog"
+      :title="$t('profile.privacySettings')"
+      width="90%"
+      :style="{ maxWidth: '500px' }"
+    >
+      <div class="privacy-settings">
+        <div class="privacy-item">
+          <div class="privacy-info">
+            <h4>{{ $t('profile.showOnlineStatus') }}</h4>
+            <p>{{ $t('profile.showOnlineStatusDesc') }}</p>
+          </div>
+          <el-switch v-model="privacySettings.showOnlineStatus" />
+        </div>
+
+        <div class="privacy-item">
+          <div class="privacy-info">
+            <h4>{{ $t('profile.showLastSeen') }}</h4>
+            <p>{{ $t('profile.showLastSeenDesc') }}</p>
+          </div>
+          <el-switch v-model="privacySettings.showLastSeen" />
+        </div>
+
+        <div class="privacy-item">
+          <div class="privacy-info">
+            <h4>{{ $t('profile.showPhone') }}</h4>
+            <p>{{ $t('profile.showPhoneDesc') }}</p>
+          </div>
+          <el-switch v-model="privacySettings.showPhone" />
+        </div>
+
+        <div class="privacy-item">
+          <div class="privacy-info">
+            <h4>{{ $t('profile.showEmail') }}</h4>
+            <p>{{ $t('profile.showEmailDesc') }}</p>
+          </div>
+          <el-switch v-model="privacySettings.showEmail" />
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="showPrivacyDialog = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="savePrivacySettings">{{ $t('common.save') }}</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, h } from 'vue'
+import { ref, h, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
-import { ArrowLeft, ArrowRight, Bell, Lock, SwitchButton, EditPen } from '@element-plus/icons-vue'
-import EditProfileModal from '@/components/common/EditProfileModal.vue'
+import { ElMessage } from 'element-plus'
+import { ArrowLeft, ArrowRight, Bell, Lock, SwitchButton } from '@element-plus/icons-vue'
 
 // Globe icon for language using Vue's h() function
 const Globe = {
@@ -98,12 +132,19 @@ const Globe = {
 const router = useRouter()
 const { locale } = useI18n()
 const userStore = useUserStore()
-const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 const notifications = ref(true)
-const showEditProfile = ref(false)
+const showPrivacyDialog = ref(false)
 
 // Initialize current locale from localStorage or default
 const currentLocale = ref(localStorage.getItem('locale') || 'en')
+
+// Privacy settings
+const privacySettings = reactive({
+  showOnlineStatus: userStore.currentUser?.showOnlineStatus ?? true,
+  showLastSeen: userStore.currentUser?.showLastSeen ?? true,
+  showPhone: userStore.currentUser?.showPhone ?? false,
+  showEmail: userStore.currentUser?.showEmail ?? false
+})
 
 const goBack = () => {
   router.back()
@@ -119,8 +160,14 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-const openEditProfile = () => {
-  showEditProfile.value = true
+const savePrivacySettings = () => {
+  try {
+    userStore.updatePrivacySettings(privacySettings)
+    ElMessage.success('Privacy settings updated successfully')
+    showPrivacyDialog.value = false
+  } catch (error) {
+    ElMessage.error('Failed to update privacy settings')
+  }
 }
 </script>
 
@@ -130,6 +177,7 @@ const openEditProfile = () => {
   background: #f0f2f5;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* 防止整个容器滚动 */
 }
 
 .settings-header {
@@ -147,48 +195,14 @@ const openEditProfile = () => {
   margin: 0 auto;
   width: 100%;
   padding: 20px;
+  overflow-y: auto; /* 允许内容滚动 */
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 和 Edge */
 }
 
-.profile-section {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-.avatar-wrapper {
-  position: relative;
-  cursor: pointer;
-}
-
-.edit-btn {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  background: #3390ec;
-  color: white;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: 2px solid white;
-}
-
-.profile-section h3 {
-  margin-top: 15px;
-  font-size: 20px;
-}
-
-.status {
-  color: #3390ec;
-  font-size: 14px;
-  margin-top: 5px;
+.settings-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .settings-list {
@@ -255,5 +269,48 @@ const openEditProfile = () => {
 
 .language-select :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #3390ec inset;
+}
+
+.privacy-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.privacy-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #f5f5f7;
+  border-radius: 8px;
+}
+
+.privacy-info {
+  flex: 1;
+}
+
+.privacy-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+.privacy-info p {
+  margin: 0;
+  font-size: 13px;
+  color: #8e8e93;
+}
+
+/* 隐藏隐私设置对话框的滚动条 */
+.privacy-settings {
+  /* 隐藏滚动条但保留滚动功能 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 和 Edge */
+}
+
+.privacy-settings::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 </style>
