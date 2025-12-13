@@ -174,19 +174,41 @@ const savePrivacySettings = () => {
 <style scoped>
 .settings-container {
   height: 100vh;
-  background: #f0f2f5;
+  background: linear-gradient(180deg, #f8fafc 0%, #f0f2f5 100%);
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* 防止整个容器滚动 */
+  overflow: hidden;
+}
+
+/* 全局隐藏滚动条 */
+.settings-container *::-webkit-scrollbar {
+  display: none;
+}
+
+.settings-container * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .settings-header {
   background: white;
-  padding: 15px 20px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  flex-shrink: 0;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1c1c1e;
+}
+
+.settings-header :deep(.el-button) {
+  border-radius: 10px;
 }
 
 .settings-content {
@@ -195,29 +217,23 @@ const savePrivacySettings = () => {
   margin: 0 auto;
   width: 100%;
   padding: 20px;
-  overflow-y: auto; /* 允许内容滚动 */
-  /* 隐藏滚动条 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 和 Edge */
-}
-
-.settings-content::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .settings-list {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .setting-item {
   display: flex;
   align-items: center;
-  padding: 15px 20px;
+  padding: 14px 18px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s ease;
   border-bottom: 1px solid #f5f5f5;
 }
 
@@ -226,31 +242,35 @@ const savePrivacySettings = () => {
 }
 
 .setting-item:hover {
-  background: #f9f9f9;
+  background: #f8f9fa;
 }
 
 .setting-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-right: 15px;
+  margin-right: 14px;
+  flex-shrink: 0;
 }
 
 .setting-item span {
   flex: 1;
   font-size: 15px;
   font-weight: 500;
+  color: #1c1c1e;
 }
 
 .arrow {
   color: #c7c7cc;
+  font-size: 16px;
 }
 
 .logout span {
   color: #ff3b30;
+  font-weight: 600;
 }
 
 .language-select {
@@ -259,31 +279,38 @@ const savePrivacySettings = () => {
 
 .language-select :deep(.el-input__wrapper) {
   background-color: #f5f5f7;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: none;
+  transition: all 0.2s ease;
 }
 
 .language-select :deep(.el-input__wrapper:hover) {
-  box-shadow: none;
+  background-color: #ebebed;
 }
 
 .language-select :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #3390ec inset;
+  box-shadow: 0 0 0 2px #3390ec inset;
+  background-color: white;
 }
 
 .privacy-settings {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 .privacy-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px;
-  background: #f5f5f7;
-  border-radius: 8px;
+  padding: 14px 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  transition: background 0.2s ease;
+}
+
+.privacy-item:hover {
+  background: #f0f2f5;
 }
 
 .privacy-info {
@@ -291,26 +318,15 @@ const savePrivacySettings = () => {
 }
 
 .privacy-info h4 {
-  margin: 0 0 5px 0;
-  font-size: 15px;
+  margin: 0 0 4px 0;
+  font-size: 14px;
   font-weight: 600;
   color: #1c1c1e;
 }
 
 .privacy-info p {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   color: #8e8e93;
-}
-
-/* 隐藏隐私设置对话框的滚动条 */
-.privacy-settings {
-  /* 隐藏滚动条但保留滚动功能 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 和 Edge */
-}
-
-.privacy-settings::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
 }
 </style>

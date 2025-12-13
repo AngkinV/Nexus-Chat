@@ -16,7 +16,7 @@ export const useUserStore = defineStore('user', () => {
         isLoading.value = true
         try {
             const response = await authAPI.register(registerData)
-            const { token: authToken, userId, username, nickname, avatarUrl, email, phone } = response.data
+            const { token: authToken, userId, username, nickname, avatarUrl, email, phone, bio, profileBackground } = response.data
 
             currentUser.value = {
                 id: userId,
@@ -25,12 +25,12 @@ export const useUserStore = defineStore('user', () => {
                 avatar: avatarUrl,
                 email,
                 phone,
-                bio: '',
+                bio: bio || '',
                 showOnlineStatus: true,
                 showLastSeen: true,
                 showPhone: false,
                 showEmail: false,
-                profileBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                profileBackground: profileBackground || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
             }
             token.value = authToken
 
@@ -50,7 +50,7 @@ export const useUserStore = defineStore('user', () => {
         isLoading.value = true
         try {
             const response = await authAPI.login(usernameOrEmail, password)
-            const { token: authToken, userId, username, nickname, avatarUrl, email, phone } = response.data
+            const { token: authToken, userId, username, nickname, avatarUrl, email, phone, bio, profileBackground } = response.data
 
             currentUser.value = {
                 id: userId,
@@ -59,12 +59,12 @@ export const useUserStore = defineStore('user', () => {
                 avatar: avatarUrl,
                 email,
                 phone,
-                bio: '',
+                bio: bio || '',
                 showOnlineStatus: true,
                 showLastSeen: true,
                 showPhone: false,
                 showEmail: false,
-                profileBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                profileBackground: profileBackground || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
             }
             token.value = authToken
 
@@ -144,7 +144,9 @@ export const useUserStore = defineStore('user', () => {
 
     const updateBackground = async (backgroundData) => {
         try {
-            // In real app, upload to server
+            if (currentUser.value?.id) {
+                await userAPI.updateBackground(currentUser.value.id, backgroundData)
+            }
             currentUser.value = {
                 ...currentUser.value,
                 profileBackground: backgroundData
@@ -152,7 +154,7 @@ export const useUserStore = defineStore('user', () => {
             localStorage.setItem('user', JSON.stringify(currentUser.value))
             return currentUser.value
         } catch (error) {
-            throw error.message || 'Background update failed'
+            throw error.response?.data?.message || error.message || 'Background update failed'
         }
     }
 
@@ -167,6 +169,100 @@ export const useUserStore = defineStore('user', () => {
         localStorage.setItem('user', JSON.stringify(currentUser.value))
     }
 
+    const updateSocialLinks = async (socialLinks) => {
+        try {
+            if (currentUser.value?.id) {
+                await userAPI.updateSocialLinks(currentUser.value.id, socialLinks)
+            }
+            currentUser.value = {
+                ...currentUser.value,
+                socialLinks
+            }
+            localStorage.setItem('user', JSON.stringify(currentUser.value))
+            return currentUser.value
+        } catch (error) {
+            throw error.response?.data?.message || error.message || 'Social links update failed'
+        }
+    }
+
+    const loadUserProfile = async () => {
+        if (!currentUser.value?.id) return
+        try {
+            const response = await userAPI.getUserProfile(currentUser.value.id)
+            const profile = response.data
+            currentUser.value = {
+                ...currentUser.value,
+                bio: profile.bio,
+                profileBackground: profile.profileBackground,
+                showOnlineStatus: profile.showOnlineStatus,
+                showLastSeen: profile.showLastSeen,
+                showPhone: profile.showPhone,
+                showEmail: profile.showEmail,
+                socialLinks: profile.socialLinks || {}
+            }
+            localStorage.setItem('user', JSON.stringify(currentUser.value))
+            return currentUser.value
+        } catch (error) {
+            console.error('Failed to load user profile:', error)
+        }
+    }
+
+    const getSocialLinks = async () => {
+        if (!currentUser.value?.id) return {}
+        try {
+            const response = await userAPI.getSocialLinks(currentUser.value.id)
+            const links = {}
+            response.data.forEach(link => {
+                links[link.platform] = link.url
+            })
+            currentUser.value = {
+                ...currentUser.value,
+                socialLinks: links
+            }
+            localStorage.setItem('user', JSON.stringify(currentUser.value))
+            return links
+        } catch (error) {
+            console.error('Failed to load social links:', error)
+            return {}
+        }
+    }
+
+    const addSocialLink = async (platform, url) => {
+        if (!currentUser.value?.id) return
+        try {
+            await userAPI.addSocialLink(currentUser.value.id, platform, url)
+            const links = {
+                ...currentUser.value?.socialLinks,
+                [platform]: url
+            }
+            currentUser.value = {
+                ...currentUser.value,
+                socialLinks: links
+            }
+            localStorage.setItem('user', JSON.stringify(currentUser.value))
+            return links
+        } catch (error) {
+            throw error.response?.data?.message || error.message || 'Failed to add social link'
+        }
+    }
+
+    const removeSocialLink = async (platform) => {
+        if (!currentUser.value?.id) return
+        try {
+            await userAPI.deleteSocialLink(currentUser.value.id, platform)
+            const links = { ...currentUser.value?.socialLinks }
+            delete links[platform]
+            currentUser.value = {
+                ...currentUser.value,
+                socialLinks: links
+            }
+            localStorage.setItem('user', JSON.stringify(currentUser.value))
+            return links
+        } catch (error) {
+            throw error.response?.data?.message || error.message || 'Failed to remove social link'
+        }
+    }
+
     return {
         currentUser,
         token,
@@ -179,6 +275,11 @@ export const useUserStore = defineStore('user', () => {
         updateProfile,
         updateAvatar,
         updateBackground,
-        updatePrivacySettings
+        updatePrivacySettings,
+        updateSocialLinks,
+        loadUserProfile,
+        getSocialLinks,
+        addSocialLink,
+        removeSocialLink
     }
 })

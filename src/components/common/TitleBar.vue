@@ -69,7 +69,7 @@ const close = () => {
   align-items: center;
   justify-content: space-between;
   height: 32px;
-  background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
+  background: linear-gradient(135deg, #469dd7 0%, #2969d0 100%);
   color: #ffffff;
   user-select: none;
   -webkit-app-region: drag;

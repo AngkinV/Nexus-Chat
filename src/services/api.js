@@ -57,7 +57,30 @@ export const userAPI = {
     updatePrivacySettings: (id, settings) =>
         apiClient.put(`/users/${id}/privacy`, settings),
 
-    getUserStats: (id) => apiClient.get(`/users/${id}/stats`)
+    getUserStats: (id) => apiClient.get(`/users/${id}/stats`),
+
+    // Profile background
+    updateBackground: (id, background) =>
+        apiClient.put(`/users/${id}/background`, { background }),
+
+    // Social links
+    getSocialLinks: (id) => apiClient.get(`/users/${id}/social-links`),
+
+    addSocialLink: (id, platform, url) =>
+        apiClient.post(`/users/${id}/social-links`, { platform, url }),
+
+    deleteSocialLink: (id, platform) =>
+        apiClient.delete(`/users/${id}/social-links/${encodeURIComponent(platform)}`),
+
+    updateSocialLinks: (id, links) =>
+        apiClient.put(`/users/${id}/social-links`, links),
+
+    // Activities
+    getUserActivities: (id, limit = 20) =>
+        apiClient.get(`/users/${id}/activities`, { params: { limit } }),
+
+    getFriendActivities: (id, limit = 20) =>
+        apiClient.get(`/users/${id}/friend-activities`, { params: { limit } })
 }
 
 // Chat API

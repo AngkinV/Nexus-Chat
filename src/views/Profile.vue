@@ -1,136 +1,203 @@
 <template>
-  <div class="profile-page">
-    <!-- Header / Hero Section -->
-    <div 
-      class="profile-hero" 
-      :class="{ 'mesh-gradient': !heroBackground }"
-      :style="heroStyle"
-    >
-      <div class="header-nav animate-entry" style="animation-delay: 0.1s">
-        <el-button class="nav-btn glass-btn" circle @click="goBack">
-          <el-icon><ArrowLeft /></el-icon>
-        </el-button>
-        <div class="header-actions">
-          <input 
-            type="file" 
-            ref="fileInput" 
-            accept="image/*" 
-            style="display: none" 
-            @change="handleBackgroundUpload"
-          >
-          <el-tooltip content="Change Background" placement="bottom">
-            <el-button class="nav-btn glass-btn" circle @click="triggerFileUpload">
-              <el-icon><Camera /></el-icon>
-            </el-button>
-          </el-tooltip>
-
-          <el-button class="nav-btn glass-btn" circle @click="showEditProfile = true">
-            <el-icon><EditPen /></el-icon>
-          </el-button>
-          <el-dropdown trigger="click">
-            <el-button class="nav-btn glass-btn" circle>
-              <el-icon><MoreFilled /></el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu class="custom-dropdown">
-                <el-dropdown-item>
-                  <el-icon><Share /></el-icon>
-                  {{ $t('profile.shareProfile') }}
-                </el-dropdown-item>
-                <el-dropdown-item>
-                  <el-icon><Link /></el-icon>
-                  {{ $t('profile.copyLink') }}
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </div>
-
-      <div class="hero-content animate-entry" style="animation-delay: 0.2s">
-        <div class="avatar-wrapper">
-          <el-avatar :size="110" :src="userStore.currentUser?.avatar || defaultAvatar" class="profile-avatar" />
-          <div class="status-indicator" :class="{ online: isOnline }"></div>
-        </div>
-        <h1 class="user-name" :class="{ 'text-shadow': !!heroBackground }">{{ userStore.currentUser?.nickname || 'User' }}</h1>
-        <p class="user-handle" :class="{ 'text-shadow': !!heroBackground }">@{{ userStore.currentUser?.username }}</p>
-        <p v-if="userStore.currentUser?.bio" class="user-bio" :class="{ 'text-shadow': !!heroBackground }">{{ userStore.currentUser.bio }}</p>
-      </div>
-    </div>
-
-    <!-- Main Content Area (Unchanged) -->
-    <div class="content-container">
+  <div class="profile-dashboard custom-scrollbar">
+    <div class="dashboard-container animate-fade-in">
       
-      <!-- Stats Cards -->
-      <div class="stats-grid animate-entry" style="animation-delay: 0.3s">
-        <div class="stat-card glass-card">
-          <span class="stat-number">{{ contactCount }}</span>
-          <span class="stat-label">{{ $t('profile.contacts') }}</span>
-        </div>
-        <div class="stat-card glass-card">
-          <span class="stat-number">{{ groupCount }}</span>
-          <span class="stat-label">{{ $t('profile.groups') }}</span>
-        </div>
-        <div class="stat-card glass-card">
-          <span class="stat-number">{{ messageCount }}</span>
-          <span class="stat-label">{{ $t('profile.messages') }}</span>
-        </div>
-      </div>
+      <!-- LEFT SIDEBAR: Identity & Navigation -->
+      <aside class="dashboard-sidebar">
+        <!-- User Identity Card -->
+        <div class="identity-card glass-panel">
+          <div class="cover-image" :style="heroStyle" :class="{ 'default-gradient': !heroBackground }">
+             <el-button class="back-btn glass-btn" circle size="small" @click="goBack">
+                <el-icon><ArrowLeft /></el-icon>
+             </el-button>
 
-      <!-- Information Section -->
-      <div class="section-card info-card glass-card animate-entry" style="animation-delay: 0.4s">
-        <h3 class="section-title">{{ $t('profile.about') }}</h3>
-        
-        <div class="info-row" v-if="userStore.currentUser?.phone && userStore.currentUser?.showPhone">
-          <div class="icon-box blue-gradient">
-            <el-icon><Phone /></el-icon>
+             <input
+                type="file"
+                ref="fileInput"
+                accept="image/*"
+                style="display: none"
+                @change="handleBackgroundUpload"
+              >
+              <el-button class="edit-cover-btn glass-btn" circle size="small" @click="triggerFileUpload">
+                <el-icon><Camera /></el-icon>
+              </el-button>
           </div>
-          <div class="info-details">
-            <span class="info-value">{{ userStore.currentUser.phone }}</span>
-            <span class="info-label">{{ $t('auth.phone') }}</span>
+          
+          <div class="profile-avatar-section">
+            <div class="avatar-container">
+              <el-avatar :size="100" :src="userStore.currentUser?.avatar || defaultAvatar" class="avatar-img" />
+              <div class="status-dot" :class="{ online: isOnline }"></div>
+            </div>
+          </div>
+
+          <div class="user-info">
+            <h2 class="user-nickname">{{ userStore.currentUser?.nickname || 'Nexus User' }}</h2>
+            <p class="user-username">@{{ userStore.currentUser?.username }}</p>
+            <p class="user-bio" v-if="userStore.currentUser?.bio">{{ userStore.currentUser.bio }}</p>
+          </div>
+
+          <div class="action-buttons">
+            <el-button type="primary" class="edit-btn" @click="showEditProfile = true">
+              {{ $t('settings.editProfile') }}
+            </el-button>
+            <el-button class="share-btn" @click="copyProfileLink">
+              <el-icon><Share /></el-icon>
+            </el-button>
           </div>
         </div>
 
-        <div class="info-row" v-if="userStore.currentUser?.email && userStore.currentUser?.showEmail">
-          <div class="icon-box purple-gradient">
-            <el-icon><Message /></el-icon>
+        <!-- Navigation Menu -->
+        <nav class="nav-menu glass-panel">
+          <div 
+            class="nav-item" 
+            :class="{ active: activeSection === 'overview' }"
+            @click="activeSection = 'overview'"
+          >
+            <el-icon><Postcard /></el-icon>
+            <span>{{ $t('profile.overview') }}</span>
           </div>
-          <div class="info-details">
-            <span class="info-value">{{ userStore.currentUser.email }}</span>
-            <span class="info-label">{{ $t('auth.email') }}</span>
+          <div 
+            class="nav-item" 
+            :class="{ active: activeSection === 'social' }"
+            @click="activeSection = 'social'"
+          >
+            <el-icon><Connection /></el-icon>
+            <span>{{ $t('profile.social') }}</span>
           </div>
-        </div>
+          <div 
+            class="nav-item" 
+            :class="{ active: activeSection === 'security' }"
+            @click="activeSection = 'security'"
+          >
+            <el-icon><Lock /></el-icon>
+            <span>{{ $t('profile.security') }}</span>
+          </div>
+        </nav>
+      </aside>
 
-        <div class="info-row" v-if="userStore.currentUser?.username">
-          <div class="icon-box green-gradient">
-            <el-icon><User /></el-icon>
+      <!-- RIGHT CONTENT AREA -->
+      <main class="dashboard-content glass-panel">
+        <!-- Floating Header (Mobile/Tablet helper or Breadcrumb) -->
+        <header class="content-header">
+          <div class="header-left">
+            <el-button v-if="isMobile" @click="goBack" circle text>
+              <el-icon><ArrowLeft /></el-icon>
+            </el-button>
+            <h1 class="section-heading">{{ sectionTitle }}</h1>
           </div>
-          <div class="info-details">
-            <span class="info-value">@{{ userStore.currentUser.username }}</span>
-            <span class="info-label">{{ $t('auth.username') }}</span>
-          </div>
+           <!-- Optional global actions could go here -->
+        </header>
+
+        <div class="content-body custom-scrollbar">
+          <Transition name="fade-slide" mode="out-in">
+            
+            <!-- OVERVIEW TAB -->
+            <div v-if="activeSection === 'overview'" class="tab-view overview-view">
+              <!-- Stats Row -->
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-icon blue-bg"><el-icon><User /></el-icon></div>
+                  <div class="stat-info">
+                    <span class="stat-value">{{ contactCount }}</span>
+                    <span class="stat-label">{{ $t('profile.contacts') }}</span>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon purple-bg"><el-icon><ChatDotRound /></el-icon></div>
+                  <div class="stat-info">
+                    <span class="stat-value">{{ groupCount }}</span>
+                    <span class="stat-label">{{ $t('profile.groups') }}</span>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon green-bg"><el-icon><Message /></el-icon></div>
+                  <div class="stat-info">
+                    <span class="stat-value">{{ messageCount }}</span>
+                    <span class="stat-label">{{ $t('profile.messages') }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contact Info Grid -->
+              <div class="detail-grid">
+                <h3 class="subsection-title">{{ $t('profile.about') }}</h3>
+                <div class="detail-cards">
+                  <div class="detail-card">
+                    <span class="detail-label">{{ $t('auth.phone') }}</span>
+                    <div class="detail-content">
+                      <el-icon><Phone /></el-icon>
+                      <span>{{ userStore.currentUser?.phone || '-' }}</span>
+                    </div>
+                  </div>
+                   <div class="detail-card">
+                    <span class="detail-label">{{ $t('auth.email') }}</span>
+                    <div class="detail-content">
+                      <el-icon><Message /></el-icon>
+                      <span>{{ userStore.currentUser?.email || '-' }}</span>
+                    </div>
+                  </div>
+                   <div class="detail-card full-width">
+                    <span class="detail-label">{{ $t('auth.username') }}</span>
+                    <div class="detail-content">
+                      <el-icon><User /></el-icon>
+                      <span>@{{ userStore.currentUser?.username }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recent Activity -->
+              <div class="activity-section">
+                <h3 class="subsection-title">{{ $t('profile.recentActivity') }}</h3>
+                <div class="activity-timeline">
+                  <div v-if="recentActivities.length === 0" class="empty-activity">
+                    <p>{{ $t('profile.noRecentActivity') }}</p>
+                  </div>
+                  <div v-for="activity in recentActivities" :key="activity.id" class="activity-row">
+                    <div class="timeline-dot" :class="activity.type"></div>
+                    <div class="activity-desc">{{ activity.text }}</div>
+                    <div class="activity-time">{{ formatTime(activity.time) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SOCIAL TAB -->
+            <div v-else-if="activeSection === 'social'" class="tab-view social-view">
+              <SocialModule />
+            </div>
+
+            <!-- SECURITY TAB -->
+            <div v-else-if="activeSection === 'security'" class="tab-view security-view">
+              <AccountSecurityModule />
+            </div>
+
+          </Transition>
         </div>
-      </div>
+      </main>
 
     </div>
 
-    <!-- Edit Profile Modal -->
+    <!-- Edit Modal -->
     <EditProfileModal v-model:visible="showEditProfile" @updated="handleProfileUpdated" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useContactStore } from '@/stores/contact'
 import { useChatStore } from '@/stores/chat'
+import { userAPI } from '@/services/api'
 import { ElMessage } from 'element-plus'
 import {
-  ArrowLeft, EditPen, MoreFilled, Phone, Message,
-  User, Share, Link, Camera
+  ArrowLeft, EditPen, Phone, Message, User, Share, Link, Camera,
+  Connection, Lock, Clock, UserFilled, Key, ChatDotRound, Postcard
 } from '@element-plus/icons-vue'
 import EditProfileModal from '@/components/common/EditProfileModal.vue'
+import SocialModule from '@/components/profile/SocialModule.vue'
+import AccountSecurityModule from '@/components/profile/AccountSecurityModule.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -140,394 +207,622 @@ const chatStore = useChatStore()
 const showEditProfile = ref(false)
 const fileInput = ref(null)
 const isOnline = ref(true)
+const activeSection = ref('overview')
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
+// Stats
 const contactCount = computed(() => contactStore.contacts.length)
 const groupCount = computed(() => chatStore.groupChats.length)
 const messageCount = computed(() => chatStore.messages.length)
 
-// Hero Background Logic
-const heroBackground = computed(() => userStore.currentUser?.profileBackground)
+// Determine if mobile for back button logic (simple width check or could be a composable)
+const isMobile = ref(window.innerWidth < 768)
+window.addEventListener('resize', () => {
+  isMobile.value = window.innerWidth < 768
+})
 
+const sectionTitle = computed(() => {
+  switch(activeSection.value) {
+    case 'overview': return 'Profile Overview';
+    case 'social': return 'Social Links';
+    case 'security': return 'Account Security';
+    default: return 'Profile';
+  }
+})
+
+// Activity & Security
+const recentActivities = ref([])
+const twoFactorEnabled = ref(false)
+const passwordStrength = ref(60)
+const activeSessions = ref(2)
+
+// Hero Background
+const heroBackground = computed(() => userStore.currentUser?.profileBackground)
 const heroStyle = computed(() => {
   const bg = heroBackground.value
   if (bg) {
-    // 如果是图片URL (以http开头或data:image开头)
     if (bg.startsWith('http') || bg.startsWith('data:image')) {
-      return {
-        backgroundImage: `url(${bg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }
+      return { backgroundImage: `url(${bg})` }
     } else {
-      // 如果是渐变色
-      return {
-        background: bg,
-      }
+      return { background: bg }
     }
   }
   return {}
 })
 
-const goBack = () => {
-  router.back()
+onMounted(async () => {
+  await loadProfileData()
+})
+
+const loadProfileData = async () => {
+  try {
+    await userStore.loadUserProfile()
+    if (userStore.currentUser?.id) {
+      try {
+        const response = await userAPI.getUserActivities(userStore.currentUser.id, 10)
+        recentActivities.value = response.data.map(activity => ({
+          id: activity.id,
+          type: activity.activityType.toLowerCase(),
+          text: activity.description || getActivityText(activity.activityType),
+          time: activity.createdAt
+        }))
+      } catch (e) {}
+
+      try {
+        const profileResponse = await userAPI.getUserProfile(userStore.currentUser.id)
+        twoFactorEnabled.value = profileResponse.data.twoFactorEnabled || false
+      } catch (e) {}
+    }
+  } catch (e) {}
 }
 
-const triggerFileUpload = () => {
-  fileInput.value.click()
+const getActivityText = (type) => {
+  const texts = { message: 'Sent a message', contact: 'Added a new contact', group: 'Joined a group', login: 'Logged in' }
+  return texts[type.toLowerCase()] || 'Activity recorded'
 }
+
+const goBack = () => router.back()
+const triggerFileUpload = () => fileInput.value.click()
 
 const handleBackgroundUpload = (event) => {
   const file = event.target.files[0]
   if (!file) return
-
-  if (!file.type.startsWith('image/')) {
-    ElMessage.error('Please upload an image file')
-    return
-  }
-
-  // Max size 5MB
-  if (file.size > 5 * 1024 * 1024) {
-    ElMessage.error('Image size should be less than 5MB')
-    return
-  }
+  if (!file.type.startsWith('image/')) return ElMessage.error('Please upload an image file')
+  if (file.size > 5 * 1024 * 1024) return ElMessage.error('Image size should be less than 5MB')
 
   const reader = new FileReader()
   reader.onload = async (e) => {
     try {
       await userStore.updateBackground(e.target.result)
       ElMessage.success('Background updated successfully')
-    } catch (error) {
-      ElMessage.error('Failed to update background')
-    }
+    } catch { ElMessage.error('Failed to update background') }
   }
   reader.readAsDataURL(file)
 }
 
-const handleProfileUpdated = (updatedUser) => {
-  // Profile was updated
+const copyProfileLink = () => {
+  navigator.clipboard.writeText(`${window.location.origin}/profile/${userStore.currentUser?.username}`)
+  ElMessage.success('Profile link copied!')
+}
+
+const handleProfileUpdated = () => loadProfileData()
+const formatTime = (time) => {
+  const date = new Date(time); const now = new Date(); const diff = now - date;
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  if (hours < 1) return 'Just now'
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
 }
 </script>
 
 <style scoped>
-.profile-page {
-  min-height: 100vh;
-  background-color: #f0f2f5;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  overflow-x: hidden;
-  /* 隐藏垂直滚动条 */
-  overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 和 Edge */
-}
-
-.profile-page::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
-}
-
-/* Animations */
-@keyframes fadeSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-entry {
-  opacity: 0; /* Initially hidden */
-  animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Hero Section with Mesh Gradient */
-.profile-hero {
-  padding: 20px 20px 40px;
-  border-bottom-left-radius: 40px;
-  border-bottom-right-radius: 40px;
+/* Page Layout */
+.profile-dashboard {
+  height: 100vh;
+  background-color: #f3f4f6;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  position: relative;
-  z-index: 10;
-  overflow: hidden;
-  transition: all 0.5s ease;
+  padding: 40px;
+  box-sizing: border-box;
 }
 
-.mesh-gradient {
-  background: radial-gradient(at 0% 0%, hsla(210,100%,96%,1) 0, transparent 50%),
-              radial-gradient(at 50% 0%, hsla(220,100%,96%,1) 0, transparent 50%),
-              radial-gradient(at 100% 0%, hsla(230,100%,96%,1) 0, transparent 50%);
-  background-color: #fff;
+[data-theme="dark"] .profile-dashboard {
+  background-color: #111827;
 }
 
-.text-shadow {
-  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  color: white !important;
-}
-
-.header-nav {
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
   width: 100%;
-  max-width: 600px;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 25px;
+  max-width: 1200px;
+  height: 100%;
+  max-height: 900px;
 }
 
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.glass-btn {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  color: #1c1c1e;
-  font-size: 18px;
-  width: 40px;
-  height: 40px;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.glass-btn:hover {
-  transform: scale(1.1);
-  background: white;
-  color: #3390ec;
-  box-shadow: 0 8px 20px rgba(51, 144, 236, 0.15);
-}
-
-.hero-content {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 600px;
-}
-
-.avatar-wrapper {
-  position: relative;
-  margin-bottom: 18px;
-  padding: 6px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 50%;
-  box-shadow: 0 12px 32px rgba(51, 144, 236, 0.2);
-  transition: transform 0.4s ease;
-}
-
-.avatar-wrapper:hover {
-  transform: scale(1.05);
-}
-
-.profile-avatar {
-  border: 4px solid white;
-}
-
-.status-indicator {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  width: 24px;
-  height: 24px;
-  background: #b0b0b0;
-  border: 4px solid white;
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.status-indicator.online {
-  background: #00c853;
-  box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.2);
-}
-
-.user-name {
-  font-size: 28px;
-  font-weight: 800;
-  color: #1c1c1e;
-  margin: 0 0 6px;
-  letter-spacing: -0.8px;
-  transition: color 0.3s;
-}
-
-.user-handle {
-  font-size: 16px;
-  color: #3390ec;
-  font-weight: 600;
-  margin: 0 0 16px;
-  opacity: 0.9;
-  transition: color 0.3s;
-}
-
-.user-bio {
-  font-size: 15px;
-  color: #666;
-  max-width: 80%;
-  line-height: 1.6;
-  margin: 0;
-  font-weight: 400;
-  transition: color 0.3s;
-}
-
-/* Content Container */
-.content-container {
-  max-width: 600px;
-  margin: -20px auto 0; /* Overlap with hero */
-  padding: 0 20px 40px;
+/* Sidebar */
+.dashboard-sidebar {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  position: relative;
-  z-index: 20;
 }
 
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0,0,0,0.02);
-  border-radius: 24px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stat-card {
-  padding: 18px 12px;
-  text-align: center;
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(51, 144, 236, 0.12);
-}
-
-.stat-number {
-  display: block;
-  font-size: 22px;
-  font-weight: 800;
-  color: #3390ec;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #8e8e93;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-
-/* Section Cards */
-.section-card {
-  padding: 8px 0;
+.glass-panel {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   overflow: hidden;
 }
 
-.section-title {
-  padding: 18px 24px 8px;
-  margin: 0;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 700;
-  color: #8e8e93;
+[data-theme="dark"] .glass-panel {
+  background: #1f2937;
+  border-color: #374151;
 }
 
-/* Info & Actions */
-.info-row,
-.action-row {
-  display: flex;
-  align-items: center;
-  padding: 18px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-  transition: background 0.2s;
-}
-
-.info-row:last-child,
-.action-row:last-child {
-  border-bottom: none;
-}
-
-.action-row {
-  cursor: pointer;
-  justify-content: space-between;
-}
-
-.action-row:hover {
-  background: rgba(51, 144, 236, 0.04);
-}
-
-.info-details {
+/* Identity Card */
+.identity-card {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  padding-bottom: 24px;
 }
 
-.info-value {
-  font-size: 16px;
-  color: #1c1c1e;
+.cover-image {
+  width: 100%;
+  height: 100px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.default-gradient {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+}
+
+.back-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0,0,0,0.3);
+  color: white;
+  border: none;
+  z-index: 10;
+}
+
+.back-btn:hover {
+  background: rgba(0,0,0,0.4);
+}
+
+.edit-cover-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.3);
+  color: white;
+  border: none;
+}
+
+.profile-avatar-section {
+  margin-top: -50px;
+  margin-bottom: 12px;
+}
+
+.avatar-container {
+  position: relative;
+  padding: 4px;
+  background: white;
+  border-radius: 50%;
+}
+
+[data-theme="dark"] .avatar-container {
+  background: #1f2937;
+}
+
+.status-dot {
+  width: 16px;
+  height: 16px;
+  background: #9ca3af;
+  border: 3px solid white;
+  border-radius: 50%;
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+}
+
+[data-theme="dark"] .status-dot {
+  border-color: #1f2937;
+}
+
+.status-dot.online {
+  background: #10b981;
+}
+
+.user-info {
+  text-align: center;
+  padding: 0 20px;
+  margin-bottom: 20px;
+}
+
+.user-nickname {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+[data-theme="dark"] .user-nickname {
+  color: #f9fafb;
+}
+
+.user-username {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 4px 0 8px;
+}
+
+.user-bio {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
+  margin: 0;
+}
+
+[data-theme="dark"] .user-bio {
+  color: #9ca3af;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.edit-btn {
+  padding: 8px 24px;
+  border-radius: 8px;
   font-weight: 600;
 }
 
-.info-label {
-  font-size: 13px;
-  color: #8e8e93;
+.share-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
 }
 
-.action-left {
+/* Nav Menu */
+.nav-menu {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
   display: flex;
   align-items: center;
-  gap: 18px;
-}
-
-.action-text {
-  font-size: 16px;
-  color: #1c1c1e;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #4b5563;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.arrow-icon {
-  color: #c7c7cc;
-  font-size: 18px;
-  transition: transform 0.2s;
+[data-theme="dark"] .nav-item {
+  color: #d1d5db;
 }
 
-.action-row:hover .arrow-icon {
-  transform: translateX(4px);
-  color: #3390ec;
+.nav-item:hover {
+  background: #f3f4f6;
+  color: #3b82f6;
 }
 
-/* Icons Gradients */
-.icon-box {
-  width: 42px;
-  height: 42px;
+[data-theme="dark"] .nav-item:hover {
+  background: #374151;
+}
+
+.nav-item.active {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+[data-theme="dark"] .nav-item.active {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+/* Content Area */
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.content-header {
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+[data-theme="dark"] .content-header {
+  border-color: #374151;
+}
+
+.section-heading {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+[data-theme="dark"] .section-heading {
+  color: #f9fafb;
+}
+
+.content-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* Overview Styles */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: #f9fafb;
+  padding: 16px;
   border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+[data-theme="dark"] .stat-card {
+  background: #283141; /* Slightly lighter than panel */
+  border-color: #374151;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   color: white;
-  flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  margin-right: 4px;
 }
 
-.blue-gradient { background: linear-gradient(135deg, #3390ec, #007aff); }
-.purple-gradient { background: linear-gradient(135deg, #a855f7, #7c3aed); }
-.green-gradient { background: linear-gradient(135deg, #22c55e, #16a34a); }
-.red-gradient { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.blue-bg { background: #3b82f6; }
+.purple-bg { background: #8b5cf6; }
+.green-bg { background: #10b981; }
 
-.logout-row .action-text {
-  color: #ef4444;
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+[data-theme="dark"] .stat-value {
+  color: #f9fafb;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.subsection-title {
+  font-size: 16px;
   font-weight: 600;
+  color: #374151;
+  margin: 0 0 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+[data-theme="dark"] .subsection-title {
+  color: #9ca3af;
+}
+
+/* Detail Grid */
+.detail-grid {
+  margin-bottom: 32px;
+}
+
+.detail-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.detail-card {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+[data-theme="dark"] .detail-card {
+  background: #283141;
+  border-color: #374151;
+}
+
+.full-width {
+  grid-column: span 2;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.detail-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #111827;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .detail-content {
+  color: #f9fafb;
+}
+
+/* Activity */
+.activity-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.activity-timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background: #e5e7eb;
+}
+
+[data-theme="dark"] .activity-timeline::before {
+  background: #374151;
+}
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  padding-left: 24px;
+}
+
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d1d5db;
+  position: absolute;
+  left: 3px;
+  border: 2px solid white;
+}
+
+[data-theme="dark"] .timeline-dot {
+  border-color: #1f2937;
+}
+
+.timeline-dot.message { background: #3b82f6; }
+.timeline-dot.login { background: #10b981; }
+
+.activity-desc {
+  flex: 1;
+  font-size: 14px;
+  color: #374151;
+}
+
+[data-theme="dark"] .activity-desc {
+  color: #d1d5db;
+}
+
+.activity-time {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Transitions */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 768px) {
+  .profile-dashboard {
+    padding: 0;
+    align-items: flex-start;
+  }
+  
+  .dashboard-container {
+    grid-template-columns: 1fr;
+    max-height: none;
+    height: auto;
+    gap: 0;
+  }
+
+  .dashboard-sidebar, .glass-panel {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  .nav-menu {
+    flex-direction: row;
+    overflow-x: auto;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .dashboard-content {
+    min-height: 500px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .detail-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .full-width {
+    grid-column: auto;
+  }
 }
 </style>

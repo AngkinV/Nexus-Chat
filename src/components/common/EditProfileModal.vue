@@ -2,24 +2,27 @@
   <el-dialog
     v-model="dialogVisible"
     :title="$t('settings.editProfile')"
-    width="500px"
-    class="edit-profile-dialog"
-    :before-close="handleClose"
+    width="480px"
+    class="nexus-dialog"
+    align-center
     :close-on-click-modal="false"
+    destroy-on-close
   >
-    <div class="edit-profile-content">
-      <!-- Avatar Section with Custom Background -->
-      <div
-        class="avatar-section"
-        :style="avatarSectionStyle"
-      >
-        <!-- Background Change Button -->
-        <div class="background-change-btn" @click="showBackgroundOptions = true">
-          <el-icon><Picture /></el-icon>
-          <span>更换背景</span>
-        </div>
+    <div class="edit-profile-container custom-scrollbar">
+      
+      <!-- HERO / AVATAR SECTION -->
+      <div class="modal-hero" :style="heroStyle">
+        <div class="hero-overlay"></div>
+        
+        <!-- Background Edit Button -->
+        <el-tooltip content="Change Cover" placement="bottom">
+          <div class="edit-cover-btn" @click="showBackgroundOptions = true">
+            <el-icon><Picture /></el-icon>
+          </div>
+        </el-tooltip>
 
-        <div class="avatar-container">
+        <!-- Avatar Wrapper -->
+        <div class="modal-avatar-wrapper">
           <el-upload
             class="avatar-uploader"
             action="#"
@@ -27,149 +30,115 @@
             :auto-upload="false"
             :on-change="handleAvatarChange"
           >
-            <div class="avatar-wrapper">
-              <el-avatar :size="120" :src="form.avatar || defaultAvatar" />
-              <div class="avatar-overlay">
+            <div class="avatar-box">
+              <el-avatar :size="100" :src="form.avatar || defaultAvatar" class="modal-avatar" />
+              <div class="avatar-edit-overlay">
                 <el-icon><Camera /></el-icon>
-                <span>{{ $t('profile.changePhoto') }}</span>
               </div>
             </div>
           </el-upload>
-          <div v-if="form.avatar" class="remove-avatar" @click="removeAvatar">
+          <div v-if="form.avatar" class="remove-avatar-btn" @click="removeAvatar" title="Remove Avatar">
             <el-icon><Delete /></el-icon>
           </div>
         </div>
       </div>
 
-      <!-- Profile Form -->
+      <!-- FORM SECTION -->
       <el-form 
         ref="formRef" 
         :model="form" 
         :rules="rules" 
         label-position="top"
-        class="profile-form"
+        class="nexus-form"
+        hide-required-asterisk
       >
-        <el-form-item :label="$t('auth.nickname')" prop="nickname">
-          <el-input 
-            v-model="form.nickname" 
-            :placeholder="$t('profile.enterNickname')"
-            maxlength="30"
-            show-word-limit
-          >
-            <template #prefix>
-              <el-icon><User /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
+        <div class="form-row">
+          <el-form-item :label="$t('auth.nickname')" prop="nickname" class="half-width">
+            <el-input v-model="form.nickname" :placeholder="$t('profile.enterNickname')" maxlength="30" />
+            <div class="input-icon"><el-icon><User /></el-icon></div>
+          </el-form-item>
+          
+          <el-form-item :label="$t('auth.username')" prop="username" class="half-width">
+            <el-input v-model="form.username" disabled placeholder="@username" />
+            <div class="input-icon"><span class="text-icon">@</span></div>
+          </el-form-item>
+        </div>
 
         <el-form-item :label="$t('profile.bio')" prop="bio">
           <el-input 
             v-model="form.bio" 
-            type="textarea"
-            :placeholder="$t('profile.enterBio')"
-            :rows="3"
-            maxlength="150"
-            show-word-limit
+            type="textarea" 
+            :rows="3" 
+            :placeholder="$t('profile.enterBio')" 
+            maxlength="150" 
+            show-word-limit 
           />
         </el-form-item>
 
-        <el-form-item :label="$t('auth.username')" prop="username">
-          <el-input 
-            v-model="form.username" 
-            :placeholder="$t('profile.enterUsername')"
-            disabled
-          >
-            <template #prefix>
-              <span class="at-symbol">@</span>
-            </template>
-          </el-input>
-          <div class="field-hint">{{ $t('profile.usernameHint') }}</div>
+        <div class="section-label">{{ $t('profile.contactInfo') }}</div>
+        
+        <el-form-item prop="email">
+           <el-input v-model="form.email" :placeholder="$t('profile.enterEmail')">
+             <template #prefix><el-icon><Message /></el-icon></template>
+           </el-input>
         </el-form-item>
 
-        <el-form-item :label="$t('auth.email')" prop="email">
-          <el-input 
-            v-model="form.email" 
-            :placeholder="$t('profile.enterEmail')"
-          >
-            <template #prefix>
-              <el-icon><Message /></el-icon>
-            </template>
-          </el-input>
+        <el-form-item prop="phone">
+           <el-input v-model="form.phone" :placeholder="$t('profile.enterPhone')">
+             <template #prefix><el-icon><Phone /></el-icon></template>
+           </el-input>
         </el-form-item>
 
-        <el-form-item :label="$t('auth.phone')" prop="phone">
-          <el-input 
-            v-model="form.phone" 
-            :placeholder="$t('profile.enterPhone')"
-          >
-            <template #prefix>
-              <el-icon><Phone /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
+        <!-- PRIVACY SETTINGS -->
+        <div class="privacy-block">
+          <div class="section-label">{{ $t('profile.privacySettings') }}</div>
+          
+          <div class="toggle-item">
+            <div class="toggle-info">
+              <span class="toggle-title">{{ $t('profile.showOnlineStatus') }}</span>
+            </div>
+            <el-switch v-model="form.showOnlineStatus" active-color="#3390ec" />
+          </div>
+
+          <div class="toggle-item">
+             <div class="toggle-info">
+              <span class="toggle-title">{{ $t('profile.showPhone') }}</span>
+            </div>
+            <el-switch v-model="form.showPhone" active-color="#3390ec" />
+          </div>
+
+           <div class="toggle-item">
+             <div class="toggle-info">
+              <span class="toggle-title">{{ $t('profile.showEmail') }}</span>
+            </div>
+            <el-switch v-model="form.showEmail" active-color="#3390ec" />
+          </div>
+        </div>
+
       </el-form>
-
-      <!-- Privacy Settings in Profile -->
-      <div class="privacy-section">
-        <div class="section-header">
-          <el-icon><Lock /></el-icon>
-          <span>{{ $t('profile.privacySettings') }}</span>
-        </div>
-        <div class="privacy-options">
-          <div class="privacy-item">
-            <div class="privacy-left">
-              <span class="privacy-label">{{ $t('profile.showOnlineStatus') }}</span>
-              <span class="privacy-desc">{{ $t('profile.showOnlineStatusDesc') }}</span>
-            </div>
-            <el-switch v-model="form.showOnlineStatus" />
-          </div>
-          <div class="privacy-item">
-            <div class="privacy-left">
-              <span class="privacy-label">{{ $t('profile.showLastSeen') }}</span>
-              <span class="privacy-desc">{{ $t('profile.showLastSeenDesc') }}</span>
-            </div>
-            <el-switch v-model="form.showLastSeen" />
-          </div>
-          <div class="privacy-item">
-            <div class="privacy-left">
-              <span class="privacy-label">{{ $t('profile.showPhone') }}</span>
-              <span class="privacy-desc">{{ $t('profile.showPhoneDesc') }}</span>
-            </div>
-            <el-switch v-model="form.showPhone" />
-          </div>
-          <div class="privacy-item">
-            <div class="privacy-left">
-              <span class="privacy-label">{{ $t('profile.showEmail') }}</span>
-              <span class="privacy-desc">{{ $t('profile.showEmailDesc') }}</span>
-            </div>
-            <el-switch v-model="form.showEmail" />
-          </div>
-        </div>
-      </div>
     </div>
 
     <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="handleClose">{{ $t('common.cancel') }}</el-button>
-        <el-button type="primary" @click="saveProfile" :loading="isSaving">
+      <div class="dialog-footer">
+        <el-button @click="handleClose" class="cancel-btn">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="saveProfile" :loading="isSaving" class="save-btn">
           {{ $t('common.save') }}
         </el-button>
-      </span>
+      </div>
     </template>
   </el-dialog>
 
-  <!-- Background Options Dialog -->
+  <!-- Background Options Dialog (Nested) -->
   <el-dialog
     v-model="showBackgroundOptions"
-    title="选择背景"
-    width="90%"
-    :style="{ maxWidth: '500px' }"
+    title="Select Background"
+    width="400px"
+    align-center
     append-to-body
+    class="nexus-dialog sub-dialog"
   >
-    <div class="background-options">
-      <!-- Upload Custom Background -->
-      <div class="option-section">
-        <h4>上传自定义背景</h4>
+    <div class="bg-options-content">
+      <div class="bg-upload-area" @click="$refs.bgFileInput.click()">
         <input
           type="file"
           ref="bgFileInput"
@@ -177,35 +146,26 @@
           style="display: none"
           @change="handleBackgroundImageUpload"
         >
-        <el-button @click="$refs.bgFileInput.click()" class="upload-btn">
-          <el-icon><Upload /></el-icon>
-          选择图片
-        </el-button>
+        <el-icon class="upload-icon"><Upload /></el-icon>
+        <span>Upload Valid Image</span>
       </div>
 
-      <!-- Preset Gradients -->
-      <div class="option-section">
-        <h4>预设渐变背景</h4>
+      <div class="gradient-section">
+        <span class="sub-label">Presets</span>
         <div class="gradient-grid">
-          <div
-            v-for="(gradient, index) in presetGradients"
-            :key="index"
-            class="gradient-item"
+          <div 
+            v-for="(gradient, idx) in presetGradients" 
+            :key="idx" 
+            class="gradient-swatch"
             :style="{ background: gradient.style }"
             @click="selectGradient(gradient.style)"
+            :class="{ active: form.profileBackground === gradient.style }"
           >
-            <div v-if="form.profileBackground === gradient.style" class="selected-check">
-              <el-icon><Check /></el-icon>
-            </div>
+             <el-icon v-if="form.profileBackground === gradient.style"><Check /></el-icon>
           </div>
         </div>
       </div>
     </div>
-
-    <template #footer>
-      <el-button @click="showBackgroundOptions = false">取消</el-button>
-      <el-button type="primary" @click="showBackgroundOptions = false">确定</el-button>
-    </template>
   </el-dialog>
 </template>
 
@@ -218,10 +178,7 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-const props = defineProps({
-  visible: Boolean
-})
-
+const props = defineProps({ visible: Boolean })
 const emit = defineEmits(['update:visible', 'updated'])
 const userStore = useUserStore()
 
@@ -236,20 +193,16 @@ const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726
 const showBackgroundOptions = ref(false)
 const bgFileInput = ref(null)
 
-// 预设渐变背景
+// Presets
 const presetGradients = [
-  { style: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }, // 原紫色
-  { style: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 粉红
-  { style: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }, // 蓝色
-  { style: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }, // 绿色
-  { style: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }, // 橙粉
-  { style: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' }, // 青紫
-  { style: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' }, // 淡蓝粉
-  { style: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)' }, // 浅粉
-  { style: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' }, // 橙色
-  { style: 'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)' }, // 红蓝
-  { style: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)' }, // 紫蓝
-  { style: 'linear-gradient(135deg, #f8b500 0%, #fceabb 100%)' }, // 金黄
+  { style: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { style: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  { style: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  { style: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+  { style: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+  { style: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
+  { style: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
+  { style: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)' },
 ]
 
 const form = ref({
@@ -263,7 +216,7 @@ const form = ref({
   showLastSeen: true,
   showPhone: false,
   showEmail: false,
-  profileBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' // 默认背景
+  profileBackground: ''
 })
 
 const rules = reactive({
@@ -276,125 +229,78 @@ const rules = reactive({
   ]
 })
 
-// 计算头像区域背景样式
-const avatarSectionStyle = computed(() => {
+const heroStyle = computed(() => {
   const bg = form.value.profileBackground
   if (bg && (bg.startsWith('http') || bg.startsWith('data:image'))) {
-    // 如果是图片URL或base64图片
-    return {
-      backgroundImage: `url(${bg})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center'
-    }
+    return { backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }
   } else if (bg) {
-    // 如果是渐变
-    return {
-      background: bg
-    }
+    return { background: bg }
   }
-  return {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-  }
+  return { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }
 })
 
 watch(() => props.visible, (val) => {
   if (val && userStore.currentUser) {
+    const u = userStore.currentUser
     form.value = {
-      avatar: userStore.currentUser.avatar || '',
-      nickname: userStore.currentUser.nickname || '',
-      username: userStore.currentUser.username || '',
-      bio: userStore.currentUser.bio || '',
-      phone: userStore.currentUser.phone || '',
-      email: userStore.currentUser.email || '',
-      showOnlineStatus: userStore.currentUser.showOnlineStatus ?? true,
-      showLastSeen: userStore.currentUser.showLastSeen ?? true,
-      showPhone: userStore.currentUser.showPhone ?? false,
-      showEmail: userStore.currentUser.showEmail ?? false,
-      profileBackground: userStore.currentUser.profileBackground || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      avatar: u.avatar || '',
+      nickname: u.nickname || '',
+      username: u.username || '',
+      bio: u.bio || '',
+      phone: u.phone || '',
+      email: u.email || '',
+      showOnlineStatus: u.showOnlineStatus ?? true,
+      showLastSeen: u.showLastSeen ?? true,
+      showPhone: u.showPhone ?? false,
+      showEmail: u.showEmail ?? false,
+      profileBackground: u.profileBackground || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     }
   }
 })
 
-const handleClose = () => {
-  dialogVisible.value = false
-}
+const handleClose = () => { dialogVisible.value = false }
 
 const handleAvatarChange = (file) => {
-  if (file.raw.size > 2 * 1024 * 1024) {
-    ElMessage.warning(t('auth.imageSizeWarning'))
-    return
-  }
+  if (file.raw.size > 2 * 1024 * 1024) return ElMessage.warning(t('auth.imageSizeWarning'))
   const reader = new FileReader()
-  reader.onload = (e) => {
-    form.value.avatar = e.target.result
-  }
+  reader.onload = (e) => { form.value.avatar = e.target.result }
   reader.readAsDataURL(file.raw)
 }
 
-const removeAvatar = () => {
-  form.value.avatar = ''
-}
+const removeAvatar = () => { form.value.avatar = '' }
 
-// 选择预设渐变
 const selectGradient = (gradientStyle) => {
   form.value.profileBackground = gradientStyle
 }
 
-// 处理背景图片上传
 const handleBackgroundImageUpload = (event) => {
   const file = event.target.files[0]
   if (!file) return
-
-  if (!file.type.startsWith('image/')) {
-    ElMessage.error('请上传图片文件')
-    return
-  }
-
-  // 最大5MB
-  if (file.size > 5 * 1024 * 1024) {
-    ElMessage.error('图片大小不能超过5MB')
-    return
-  }
+  if (!file.type.startsWith('image/')) return ElMessage.error('Please upload an image')
+  if (file.size > 5 * 1024 * 1024) return ElMessage.error('Max size 5MB')
 
   const reader = new FileReader()
   reader.onload = (e) => {
     form.value.profileBackground = e.target.result
     showBackgroundOptions.value = false
-    ElMessage.success('背景已更新')
+    ElMessage.success('Background updated')
   }
   reader.readAsDataURL(file)
 }
 
 const saveProfile = async () => {
   if (!formRef.value) return
-  
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    
     isSaving.value = true
-    
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500))
       
-      // Update user store
       userStore.currentUser = {
         ...userStore.currentUser,
-        avatar: form.value.avatar,
-        nickname: form.value.nickname,
-        bio: form.value.bio,
-        phone: form.value.phone,
-        email: form.value.email,
-        showOnlineStatus: form.value.showOnlineStatus,
-        showLastSeen: form.value.showLastSeen,
-        showPhone: form.value.showPhone,
-        showEmail: form.value.showEmail,
-        profileBackground: form.value.profileBackground
+        ...form.value
       }
-
-      // Persist to localStorage
       localStorage.setItem('user', JSON.stringify(userStore.currentUser))
-      
       emit('updated', userStore.currentUser)
       ElMessage.success(t('profile.updateSuccess'))
       handleClose()
@@ -408,242 +314,271 @@ const saveProfile = async () => {
 </script>
 
 <style>
-/* 全局样式 - 确保对话框本身固定 */
-.edit-profile-dialog {
-  /* 对话框固定不动 */
+/* Global Dialog Overrides for "Nexus" Theme */
+.nexus-dialog {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
-
-.edit-profile-dialog .el-dialog {
-  margin: 0 !important;
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
+.nexus-dialog .el-dialog__header {
+  margin: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  background: white;
 }
-
-.edit-profile-dialog .el-dialog__body {
-  padding: 0 !important;
-  max-height: 70vh !important;
-  overflow-y: auto !important;
-  /* 隐藏滚动条 */
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+.nexus-dialog .el-dialog__title {
+  font-weight: 700;
+  color: #111827;
+  font-size: 16px;
 }
-
-.edit-profile-dialog .el-dialog__body::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+.nexus-dialog .el-dialog__body {
+  padding: 0; 
+}
+.nexus-dialog .el-dialog__footer {
+  padding: 16px 20px;
+  background: #f9fafb;
+  border-top: 1px solid #f3f4f6;
+}
+[data-theme='dark'] .nexus-dialog {
+  background: #1f2937;
+}
+[data-theme='dark'] .nexus-dialog .el-dialog__header {
+  background: #1f2937;
+  border-color: #374151;
+}
+[data-theme='dark'] .nexus-dialog .el-dialog__title {
+  color: #f9fafb;
+}
+[data-theme='dark'] .nexus-dialog .el-dialog__footer {
+  background: #111827;
+  border-color: #374151;
 }
 </style>
 
 <style scoped>
-/* 对话框主体样式 - 只有内容滚动 */
-
-.edit-profile-content {
-  display: flex;
-  flex-direction: column;
+.edit-profile-container {
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
-.avatar-section {
-  padding: 30px;
-  display: flex;
-  justify-content: center;
+/* HERO */
+.modal-hero {
+  height: 120px;
   position: relative;
-  min-height: 200px;
-  transition: background 0.3s ease;
+  background-size: cover;
+  background-position: center;
 }
 
-.background-change-btn {
+.hero-overlay {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  padding: 8px 16px;
-  border-radius: 20px;
-  cursor: pointer;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.4));
+}
+
+.edit-cover-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.3);
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #333;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  z-index: 10;
-}
-
-.background-change-btn:hover {
-  background: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.background-change-btn .el-icon {
-  font-size: 16px;
-}
-
-.avatar-container {
-  position: relative;
-}
-
-.avatar-wrapper {
-  position: relative;
+  justify-content: center;
+  color: white;
   cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s;
+}
+.edit-cover-btn:hover {
+  background: rgba(0,0,0,0.6);
+  transform: scale(1.05);
+}
+
+.modal-avatar-wrapper {
+  position: absolute;
+  bottom: -40px;
+  left: 20px;
+  z-index: 20;
+}
+
+.avatar-box {
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
+  padding: 3px;
+  background: white;
+  position: relative;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
   overflow: hidden;
 }
+[data-theme='dark'] .avatar-box {
+  background: #1f2937;
+}
 
-.avatar-wrapper:hover .avatar-overlay {
+.modal-avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.avatar-edit-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  opacity: 0;
+  border-radius: 50%;
+  transition: opacity 0.2s;
+  font-size: 24px;
+}
+.avatar-box:hover .avatar-edit-overlay {
   opacity: 1;
 }
 
-.avatar-overlay {
+.remove-avatar-btn {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  right: -5px;
+  background: #ef4444;
   color: white;
-  opacity: 0;
-  transition: opacity 0.2s;
-  gap: 5px;
-}
-
-.avatar-overlay .el-icon {
-  font-size: 28px;
-}
-
-.avatar-overlay span {
-  font-size: 12px;
-}
-
-.remove-avatar {
-  position: absolute;
-  top: 0;
-  right: -10px;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: #ff4d4f;
-  color: white;
   display: flex;
+  align-items: center;
   justify-content: center;
-  align-items: center;
+  font-size: 14px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.4);
-  transition: transform 0.2s;
+  border: 2px solid white;
 }
 
-.remove-avatar:hover {
-  transform: scale(1.1);
+/* FORM */
+.nexus-form {
+  padding: 50px 24px 20px;
 }
 
-.profile-form {
-  padding: 24px;
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+.half-width {
+  flex: 1;
 }
 
-.profile-form :deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #333;
-}
-
-.profile-form :deep(.el-input__wrapper) {
-  border-radius: 10px;
-}
-
-.at-symbol {
-  color: #999;
-  font-weight: 500;
-}
-
-.field-hint {
-  margin-top: 4px;
+.section-label {
   font-size: 12px;
-  color: #999;
-}
-
-.privacy-section {
-  padding: 0 24px 24px;
-  border-top: 1px solid #f0f0f0;
-  margin-top: 10px;
-  padding-top: 20px;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   font-weight: 600;
-  font-size: 15px;
-  color: #333;
-  margin-bottom: 15px;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin: 20px 0 12px;
+  letter-spacing: 0.5px;
 }
 
-.section-header .el-icon {
-  color: #8774e1;
+/* Custom Input Styling Hacks specific to this form to make it "clean" */
+.nexus-form :deep(.el-input__wrapper) {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding-left: 12px;
+}
+.nexus-form :deep(.el-input__prefix-inner) {
+  color: #9ca3af;
 }
 
-.privacy-options {
+/* Privacy Toggles */
+.privacy-block {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #f3f4f6;
+}
+[data-theme='dark'] .privacy-block {
+  background: #111827; /* Darker than dialog bg */
+  border-color: #374151;
+}
+
+.toggle-item {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.privacy-item {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 15px;
-  background: #f8f9fa;
-  border-radius: 10px;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+[data-theme='dark'] .toggle-item {
+  border-color: #374151;
+}
+.toggle-item:last-child {
+  border-bottom: none;
 }
 
-.privacy-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.privacy-label {
+.toggle-title {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: #374151;
+}
+[data-theme='dark'] .toggle-title {
+  color: #d1d5db;
 }
 
-.privacy-desc {
-  font-size: 12px;
-  color: #999;
-}
-
+/* Dialog Footer */
 .dialog-footer {
   display: flex;
-  gap: 10px;
   justify-content: flex-end;
+  gap: 12px;
+}
+.save-btn {
+  background: #3390ec;
+  border: none;
+  font-weight: 600;
+  padding: 8px 24px;
+}
+.save-btn:hover {
+  background: #287fd6;
 }
 
-/* 背景选择样式 */
-.background-options {
+/* BG Options Sub-Dialog */
+.bg-options-content {
+  padding: 20px;
+}
+
+.bg-upload-area {
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f9fafb;
+}
+.bg-upload-area:hover {
+  border-color: #3390ec;
+  color: #3390ec;
+  background: #eff6ff;
+}
+.upload-icon {
+  font-size: 24px;
 }
 
-.option-section h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
+.gradient-section {
+  margin-top: 20px;
+}
+.sub-label {
+  display: block;
+  font-size: 13px;
   font-weight: 600;
-  color: #333;
-}
-
-.upload-btn {
-  width: 100%;
+  margin-bottom: 12px;
+  color: #374151;
 }
 
 .gradient-grid {
@@ -652,40 +587,25 @@ const saveProfile = async () => {
   gap: 12px;
 }
 
-.gradient-item {
+.gradient-swatch {
   aspect-ratio: 1;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
   position: relative;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.gradient-item:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.selected-check {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 32px;
-  height: 32px;
-  background: white;
-  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #67c23a;
-  font-size: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  color: white;
+}
+.gradient-swatch:hover {
+  transform: scale(1.05);
+}
+.gradient-swatch.active {
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #3390ec;
 }
 
-@media (max-width: 600px) {
-  .gradient-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
 </style>
