@@ -61,8 +61,8 @@
               </div>
             </div>
             <div class="user-right">
-              <el-button 
-                v-if="!isContactAdded(user.id)"
+              <el-button
+                v-if="!isContactAdded(user.id) && !isRequestSent(user.id)"
                 type="primary"
                 size="small"
                 @click="addContact(user)"
@@ -71,9 +71,13 @@
                 <el-icon><Plus /></el-icon>
                 {{ $t('contact.add') }}
               </el-button>
-              <el-button v-else type="success" size="small" disabled>
+              <el-button v-else-if="isContactAdded(user.id)" type="success" size="small" disabled>
                 <el-icon><Check /></el-icon>
                 {{ $t('contact.added') }}
+              </el-button>
+              <el-button v-else type="warning" size="small" disabled>
+                <el-icon><Clock /></el-icon>
+                {{ $t('contact.requestSentShort') }}
               </el-button>
             </div>
           </div>
@@ -137,7 +141,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { Search, Plus, Check, InfoFilled, Loading, Warning, Star } from '@element-plus/icons-vue'
+import { Search, Plus, Check, InfoFilled, Loading, Warning, Star, Clock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useContactStore } from '@/stores/contact'
 import { useUserStore } from '@/stores/user'
@@ -172,6 +176,7 @@ const hasSearched = ref(false)
 const isSearching = ref(false)
 const addingUserId = ref(null)
 const addedUserIds = ref([])
+const requestSentUserIds = ref([])  // 已发送申请的用户ID
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
 // Recommended users from API
@@ -219,11 +224,17 @@ const resetForm = () => {
   hasSearched.value = false
   isSearching.value = false
   addingUserId.value = null
+  requestSentUserIds.value = []
 }
 
 const isContactAdded = (userId) => {
   return addedUserIds.value.includes(userId) ||
          contactStore.contacts.some(c => c.id === userId || c.userId === userId)
+}
+
+const isRequestSent = (userId) => {
+  return requestSentUserIds.value.includes(userId) ||
+         contactStore.sentRequests.some(r => r.toUserId === userId)
 }
 
 const handleSearch = async () => {
@@ -262,13 +273,33 @@ const addContact = async (user) => {
   addingUserId.value = user.id
 
   try {
-    await contactStore.addContactRequest(userId, user.id)
-    addedUserIds.value.push(user.id)
-    emit('added', user)
-    ElMessage.success(t('contact.addSuccess', { name: user.nickname || user.username }))
+    const result = await contactStore.addContactRequest(userId, user.id)
+
+    if (result.type === 'direct') {
+      // 直接添加成功
+      addedUserIds.value.push(user.id)
+      emit('added', user)
+      ElMessage.success(t('contact.addSuccess', { name: user.nickname || user.username }))
+    } else if (result.type === 'request') {
+      // 发送了好友申请
+      requestSentUserIds.value.push(user.id)
+      ElMessage.success(t('contact.requestSent', { name: user.nickname || user.username }))
+    }
   } catch (error) {
     console.error('Failed to add contact:', error)
-    ElMessage.error(t('contact.addFailed'))
+    const errorKey = error.response?.data?.error
+    // Map backend error keys to frontend translations
+    let errorMsg = t('contact.addFailed')
+    if (errorKey === 'error.friend.request.already.sent') {
+      errorMsg = t('contact.alreadySent')
+    } else if (errorKey === 'error.contact.exists' || errorKey === 'error.friend.request.already.contact') {
+      errorMsg = t('contact.alreadyContact')
+    } else if (errorKey === 'error.contact.self.add') {
+      errorMsg = t('contact.cannotAddSelf')
+    } else if (errorKey) {
+      errorMsg = errorKey
+    }
+    ElMessage.error(errorMsg)
   } finally {
     addingUserId.value = null
   }

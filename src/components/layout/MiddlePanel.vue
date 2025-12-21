@@ -19,7 +19,7 @@
 
       <!-- Message List -->
       <div class="messages-container">
-        <MessageList :messages="chatStore.messages" />
+        <MessageList :messages="currentMessages" />
       </div>
 
       <!-- Input Area -->
@@ -35,22 +35,98 @@
 </template>
 
 <script setup>
-import { inject } from 'vue'
+import { inject, watch, computed } from 'vue'
 import { useChatStore } from '@/stores/chat'
+import { useMessageStore } from '@/stores/message'
+import { useUserStore } from '@/stores/user'
+import { messageAPI } from '@/services/api'
+import websocket from '@/services/websocket'
 import { Phone, Search, MoreFilled } from '@element-plus/icons-vue'
 import MessageList from '@/components/chat/MessageList.vue'
 import MessageInput from '@/components/chat/MessageInput.vue'
 
 const chatStore = useChatStore()
+const messageStore = useMessageStore()
+const userStore = useUserStore()
 const toggleRightPanel = inject('toggleRightPanel')
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
+// Get messages for current chat from messageStore
+const currentMessages = computed(() => {
+  if (!chatStore.activeChat) return []
+  return messageStore.getMessages(chatStore.activeChat.id)
+})
+
+// Watch activeChat changes to load messages and subscribe to chat room
+watch(() => chatStore.activeChat, async (newChat, oldChat) => {
+  if (newChat && newChat.id !== oldChat?.id) {
+    // Load chat messages if not already loaded
+    try {
+      const response = await messageAPI.getChatMessages(
+        newChat.id,
+        userStore.currentUser?.id,
+        0,
+        50
+      )
+      // Transform messages to match frontend format
+      const transformedMessages = (response.data || []).map(m => ({
+        id: m.id,
+        chatId: m.chatId,
+        senderId: m.senderId,
+        senderName: m.senderNickname,
+        senderAvatar: m.senderAvatar,
+        content: m.content,
+        type: m.messageType?.toUpperCase() || 'TEXT',
+        fileUrl: m.fileUrl,
+        timestamp: m.createdAt,
+        createdAt: m.createdAt,
+        isRead: m.isRead,
+        isSelf: m.senderId === userStore.currentUser?.id
+      }))
+      messageStore.setMessages(newChat.id, transformedMessages)
+    } catch (error) {
+      console.error('Failed to load messages:', error)
+    }
+
+    // Subscribe to chat room for real-time messages
+    if (!chatStore.isChatSubscribed(newChat.id)) {
+      websocket.subscribeToChatRoom(newChat.id)
+      chatStore.markChatSubscribed(newChat.id)
+    }
+  }
+}, { immediate: true })
+
 const handleSendMessage = (content, type = 'TEXT') => {
-  chatStore.sendMessage({
-    chatId: chatStore.activeChat.id,
+  if (!chatStore.activeChat || !userStore.currentUser) return
+
+  const chatId = chatStore.activeChat.id
+  const user = userStore.currentUser
+
+  // Create optimistic message (show immediately)
+  const optimisticMessage = {
+    id: `temp-${Date.now()}`,
+    chatId: chatId,
+    senderId: user.id,
+    senderName: user.nickname,
+    senderAvatar: user.avatar,
+    content: content,
+    type: type,
+    timestamp: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    isRead: false,
+    isSelf: true
+  }
+
+  // Add message to store immediately
+  messageStore.addMessage(chatId, optimisticMessage)
+
+  // Send message via WebSocket
+  websocket.sendMessage(
+    chatId,
+    user.id,
     content,
-    type
-  })
+    type.toLowerCase()
+  )
 }
 </script>
 

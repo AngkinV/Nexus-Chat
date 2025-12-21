@@ -63,6 +63,9 @@
     "contact": {
         "addContact": "添加联系人",
         "removeContact": "删除联系人",
+        "confirmRemove": "确定要删除联系人 {name} 吗？",
+        "removeSuccess": "联系人已删除",
+        "removeFailed": "删除联系人失败",
         "searchUsers": "搜索用户...",
         "searchPlaceholder": "搜索用户名、昵称或邮箱",
         "noContacts": "暂无联系人",
@@ -81,7 +84,18 @@
         "recommended": "推荐联系人",
         "invalidUserId": "请输入有效的用户ID",
         "cannotAddSelf": "不能添加自己为联系人",
-        "userNotFound": "用户不存在"
+        "userNotFound": "用户不存在",
+        "requestSent": "已向 {name} 发送好友请求",
+        "requestSentShort": "已发送",
+        "friendRequests": "好友请求",
+        "requestAccepted": "已接受好友请求",
+        "requestRejected": "已拒绝好友请求",
+        "acceptFailed": "接受好友请求失败",
+        "rejectFailed": "拒绝好友请求失败",
+        "confirmReject": "确定要拒绝 {name} 的好友请求吗？",
+        "rejectRequest": "拒绝请求",
+        "alreadySent": "好友请求已发送",
+        "alreadyContact": "已经是好友了"
     },
     "group": {
         "createGroup": "创建群组",
@@ -114,6 +128,7 @@
         "usernameHint": "用户名创建后不可更改",
         "bio": "个人简介",
         "about": "关于",
+        "contactInfo": "联系方式",
         "nicknameRequired": "请输入昵称",
         "nicknameLength": "昵称长度需在2-30个字符之间",
         "privacySettings": "隐私设置",

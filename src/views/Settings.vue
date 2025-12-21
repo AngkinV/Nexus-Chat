@@ -62,6 +62,30 @@
       :style="{ maxWidth: '500px' }"
     >
       <div class="privacy-settings">
+        <!-- 好友验证方式设置 -->
+        <div class="privacy-item friend-request-mode">
+          <div class="privacy-info">
+            <h4>{{ $t('privacy.friendRequestMode') }}</h4>
+            <p>{{ $t('privacy.friendRequestModeDesc') }}</p>
+          </div>
+          <el-radio-group v-model="privacySettings.friendRequestMode" class="mode-radio-group">
+            <el-radio value="DIRECT">
+              <div class="radio-content">
+                <span class="radio-label">{{ $t('privacy.directMode') }}</span>
+                <span class="radio-desc">{{ $t('privacy.directModeDesc') }}</span>
+              </div>
+            </el-radio>
+            <el-radio value="VERIFY">
+              <div class="radio-content">
+                <span class="radio-label">{{ $t('privacy.verifyMode') }}</span>
+                <span class="radio-desc">{{ $t('privacy.verifyModeDesc') }}</span>
+              </div>
+            </el-radio>
+          </el-radio-group>
+        </div>
+
+        <div class="privacy-divider"></div>
+
         <div class="privacy-item">
           <div class="privacy-info">
             <h4>{{ $t('profile.showOnlineStatus') }}</h4>
@@ -143,7 +167,8 @@ const privacySettings = reactive({
   showOnlineStatus: userStore.currentUser?.showOnlineStatus ?? true,
   showLastSeen: userStore.currentUser?.showLastSeen ?? true,
   showPhone: userStore.currentUser?.showPhone ?? false,
-  showEmail: userStore.currentUser?.showEmail ?? false
+  showEmail: userStore.currentUser?.showEmail ?? false,
+  friendRequestMode: userStore.currentUser?.friendRequestMode ?? 'DIRECT'
 })
 
 const goBack = () => {
@@ -328,5 +353,62 @@ const savePrivacySettings = () => {
   margin: 0;
   font-size: 12px;
   color: #8e8e93;
+}
+
+/* Friend request mode styles */
+.privacy-item.friend-request-mode {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.mode-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.mode-radio-group :deep(.el-radio) {
+  display: flex;
+  align-items: flex-start;
+  height: auto;
+  padding: 12px;
+  background: #f0f2f5;
+  border-radius: 10px;
+  margin-right: 0;
+  width: 100%;
+}
+
+.mode-radio-group :deep(.el-radio.is-checked) {
+  background: #e8f4ff;
+  border: 1px solid #3390ec;
+}
+
+.mode-radio-group :deep(.el-radio__label) {
+  padding-left: 10px;
+}
+
+.radio-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.radio-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+.radio-desc {
+  font-size: 12px;
+  color: #8e8e93;
+}
+
+.privacy-divider {
+  height: 1px;
+  background: #e5e5e5;
+  margin: 8px 0;
 }
 </style>

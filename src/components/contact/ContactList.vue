@@ -1,6 +1,34 @@
 <template>
   <div class="contact-list">
-    <div v-if="filteredContacts.length === 0" class="empty-state">
+    <!-- Pending Friend Requests -->
+    <div v-if="contactStore.pendingRequests.length > 0" class="request-section">
+      <div class="section-header request-header">
+        <el-icon><Bell /></el-icon>
+        {{ $t('contact.friendRequests') }} ({{ contactStore.pendingRequests.length }})
+      </div>
+      <div
+        v-for="request in contactStore.pendingRequests"
+        :key="request.id"
+        class="request-item"
+      >
+        <el-avatar :size="45" :src="request.fromAvatarUrl || defaultAvatar" />
+        <div class="request-info">
+          <span class="request-name">{{ request.fromNickname }}</span>
+          <span class="request-username">@{{ request.fromUsername }}</span>
+          <span v-if="request.message" class="request-message">{{ request.message }}</span>
+        </div>
+        <div class="request-actions">
+          <el-button type="primary" size="small" @click="acceptRequest(request)">
+            <el-icon><Check /></el-icon>
+          </el-button>
+          <el-button type="danger" size="small" @click="rejectRequest(request)">
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="filteredContacts.length === 0 && contactStore.pendingRequests.length === 0" class="empty-state">
       <div class="empty-icon">
         <el-icon :size="48"><User /></el-icon>
       </div>
@@ -36,6 +64,9 @@
             <el-button circle text @click.stop="startChat(contact)">
               <el-icon><ChatDotRound /></el-icon>
             </el-button>
+            <el-button circle text type="danger" @click.stop="deleteContact(contact)">
+              <el-icon><Delete /></el-icon>
+            </el-button>
           </div>
         </div>
       </div>
@@ -60,6 +91,9 @@
             <el-button circle text @click.stop="startChat(contact)">
               <el-icon><ChatDotRound /></el-icon>
             </el-button>
+            <el-button circle text type="danger" @click.stop="deleteContact(contact)">
+              <el-icon><Delete /></el-icon>
+            </el-button>
           </div>
         </div>
       </div>
@@ -69,9 +103,11 @@
 
 <script setup>
 import { computed } from 'vue'
-import { User, Plus, ChatDotRound } from '@element-plus/icons-vue'
+import { User, Plus, ChatDotRound, Delete, Bell, Check, Close } from '@element-plus/icons-vue'
 import { useContactStore } from '@/stores/contact'
+import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
@@ -89,24 +125,15 @@ const props = defineProps({
 const emit = defineEmits(['select', 'add'])
 
 const contactStore = useContactStore()
+const userStore = useUserStore()
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
-
-// Mock contacts if empty
-if (contactStore.contacts.length === 0) {
-  contactStore.setContacts([
-    { id: 201, nickname: 'John Doe', username: 'johnd', avatar: '', isOnline: true },
-    { id: 202, nickname: 'Jane Smith', username: 'janes', avatar: '', isOnline: true },
-    { id: 203, nickname: 'Mike Wilson', username: 'mikew', avatar: '', isOnline: false, lastSeen: new Date(Date.now() - 3600000).toISOString() },
-    { id: 204, nickname: 'Emily Chen', username: 'emilyc', avatar: '', isOnline: false, lastSeen: new Date(Date.now() - 86400000).toISOString() }
-  ])
-}
 
 const filteredContacts = computed(() => {
   if (!props.searchQuery) {
     return contactStore.contacts
   }
   const query = props.searchQuery.toLowerCase()
-  return contactStore.contacts.filter(contact => 
+  return contactStore.contacts.filter(contact =>
     contact.nickname.toLowerCase().includes(query) ||
     contact.username.toLowerCase().includes(query)
   )
@@ -131,6 +158,63 @@ const startChat = (contact) => {
 const formatLastSeen = (lastSeen) => {
   if (!lastSeen) return ''
   return `${t('chat.lastSeen')} ${dayjs(lastSeen).fromNow()}`
+}
+
+// Accept friend request
+const acceptRequest = async (request) => {
+  try {
+    await contactStore.acceptRequest(request.id, userStore.currentUser?.id)
+    ElMessage.success(t('contact.requestAccepted'))
+  } catch (error) {
+    console.error('Failed to accept request:', error)
+    ElMessage.error(t('contact.acceptFailed'))
+  }
+}
+
+// Reject friend request
+const rejectRequest = async (request) => {
+  try {
+    await ElMessageBox.confirm(
+      t('contact.confirmReject', { name: request.fromNickname }),
+      t('contact.rejectRequest'),
+      {
+        confirmButtonText: t('common.ok'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning'
+      }
+    )
+    await contactStore.rejectRequest(request.id, userStore.currentUser?.id)
+    ElMessage.success(t('contact.requestRejected'))
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Failed to reject request:', error)
+      ElMessage.error(t('contact.rejectFailed'))
+    }
+  }
+}
+
+// Delete contact with confirmation
+const deleteContact = async (contact) => {
+  try {
+    await ElMessageBox.confirm(
+      t('contact.confirmRemove', { name: contact.nickname }),
+      t('contact.removeContact'),
+      {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning'
+      }
+    )
+
+    // Call store method to remove contact
+    await contactStore.removeContactRequest(userStore.currentUser?.id, contact.id)
+    ElMessage.success(t('contact.removeSuccess'))
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Failed to remove contact:', error)
+      ElMessage.error(t('contact.removeFailed'))
+    }
+  }
 }
 </script>
 
@@ -248,5 +332,57 @@ const formatLastSeen = (lastSeen) => {
 
 .contact-item:hover .contact-actions {
   opacity: 1;
+}
+
+/* Friend Request Styles */
+.request-section {
+  margin-bottom: 15px;
+  background: #fff8e1;
+  border-radius: 8px;
+  margin: 10px 15px;
+  overflow: hidden;
+}
+
+.request-header {
+  background: #ffecb3;
+  color: #f57c00;
+  padding: 10px 15px;
+}
+
+.request-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border-top: 1px solid #ffe082;
+}
+
+.request-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.request-name {
+  font-weight: 500;
+  font-size: 15px;
+  color: #333;
+}
+
+.request-username {
+  font-size: 13px;
+  color: #3390ec;
+}
+
+.request-message {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.request-actions {
+  display: flex;
+  gap: 8px;
 }
 </style>

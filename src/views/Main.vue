@@ -41,16 +41,31 @@ onMounted(async () => {
       // Load contacts from backend
       await contactStore.fetchContacts(userId)
 
+      // Load pending friend requests
+      await contactStore.fetchPendingRequests(userId)
+
       // Load chats from backend
       await chatStore.fetchChats(userId)
 
-      // Connect WebSocket
-      websocket.connect(userId)
+      // Connect WebSocket with callback to subscribe to all chats
+      websocket.connect(userId, subscribeToAllChats)
     } catch (error) {
       console.error('Failed to load data:', error)
     }
   }
 })
+
+// Subscribe to all existing chat rooms
+const subscribeToAllChats = () => {
+  console.log('Subscribing to all chats:', chatStore.chats.length)
+  chatStore.chats.forEach(chat => {
+    if (!chatStore.isChatSubscribed(chat.id)) {
+      websocket.subscribeToChatRoom(chat.id)
+      chatStore.markChatSubscribed(chat.id)
+      console.log('Subscribed to chat:', chat.id, chat.name)
+    }
+  })
+}
 </script>
 
 <style scoped>

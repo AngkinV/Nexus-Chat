@@ -5,7 +5,9 @@ import { contactAPI, userAPI } from '@/services/api'
 export const useContactStore = defineStore('contact', () => {
     const contacts = ref([])
     const onlineUsers = ref(new Set())
-    const pendingRequests = ref([])
+    const pendingRequests = ref([])  // 收到的待处理好友申请
+    const sentRequests = ref([])     // 发出的待处理好友申请
+    const pendingRequestCount = ref(0)
     const isLoading = ref(false)
 
     // Computed: Online contacts
@@ -103,12 +105,18 @@ export const useContactStore = defineStore('contact', () => {
         }
     }
 
-    async function addContactRequest(userId, contactUserId) {
+    /**
+     * 添加联系人 - 会根据目标用户的隐私设置决定是直接添加还是发送申请
+     * @returns { type: 'direct' | 'request', data: ContactDTO | ContactRequestDTO }
+     */
+    async function addContactRequest(userId, contactUserId, message = null) {
         try {
-            const response = await contactAPI.addContact(userId, contactUserId)
-            if (response.data) {
-                // Backend returns ContactDTO with userId field
-                const contactData = response.data
+            const response = await contactAPI.addContact(userId, contactUserId, message)
+            const result = response.data
+
+            if (result.type === 'direct') {
+                // 直接添加成功
+                const contactData = result.data
                 addContact({
                     id: contactData.userId,
                     username: contactData.username,
@@ -120,8 +128,12 @@ export const useContactStore = defineStore('contact', () => {
                     email: contactData.email,
                     phone: contactData.phone
                 })
+            } else if (result.type === 'request') {
+                // 发送了好友申请
+                sentRequests.value.unshift(result.data)
             }
-            return response.data
+
+            return result
         } catch (error) {
             console.error('Failed to add contact:', error)
             throw error
@@ -142,10 +154,141 @@ export const useContactStore = defineStore('contact', () => {
         return contacts.value.find(c => c.id === contactId)
     }
 
+    // ==================== 好友申请相关方法 ====================
+
+    /**
+     * 获取待处理的好友申请（收到的）
+     */
+    async function fetchPendingRequests(userId) {
+        try {
+            const response = await contactAPI.getPendingRequests(userId)
+            pendingRequests.value = response.data || []
+            pendingRequestCount.value = pendingRequests.value.length
+        } catch (error) {
+            console.error('Failed to fetch pending requests:', error)
+            throw error
+        }
+    }
+
+    /**
+     * 获取已发送的好友申请
+     */
+    async function fetchSentRequests(userId) {
+        try {
+            const response = await contactAPI.getSentRequests(userId)
+            sentRequests.value = response.data || []
+        } catch (error) {
+            console.error('Failed to fetch sent requests:', error)
+            throw error
+        }
+    }
+
+    /**
+     * 获取待处理申请数量
+     */
+    async function fetchPendingRequestCount(userId) {
+        try {
+            const response = await contactAPI.getPendingRequestCount(userId)
+            pendingRequestCount.value = response.data?.count || 0
+        } catch (error) {
+            console.error('Failed to fetch pending request count:', error)
+        }
+    }
+
+    /**
+     * 接受好友申请
+     */
+    async function acceptRequest(requestId, userId) {
+        try {
+            const response = await contactAPI.acceptRequest(requestId, userId)
+            // 添加到联系人列表
+            const contactData = response.data
+            addContact({
+                id: contactData.userId,
+                username: contactData.username,
+                nickname: contactData.nickname,
+                avatarUrl: contactData.avatarUrl,
+                avatar: contactData.avatarUrl,
+                isOnline: contactData.isOnline,
+                lastSeen: contactData.lastSeen,
+                email: contactData.email,
+                phone: contactData.phone
+            })
+            // 从待处理列表中移除
+            pendingRequests.value = pendingRequests.value.filter(r => r.id !== requestId)
+            pendingRequestCount.value = Math.max(0, pendingRequestCount.value - 1)
+            return response.data
+        } catch (error) {
+            console.error('Failed to accept request:', error)
+            throw error
+        }
+    }
+
+    /**
+     * 拒绝好友申请
+     */
+    async function rejectRequest(requestId, userId) {
+        try {
+            await contactAPI.rejectRequest(requestId, userId)
+            // 从待处理列表中移除
+            pendingRequests.value = pendingRequests.value.filter(r => r.id !== requestId)
+            pendingRequestCount.value = Math.max(0, pendingRequestCount.value - 1)
+        } catch (error) {
+            console.error('Failed to reject request:', error)
+            throw error
+        }
+    }
+
+    /**
+     * 处理 WebSocket 收到新的好友申请
+     */
+    function handleNewRequest(requestData) {
+        // 检查是否已存在
+        const exists = pendingRequests.value.some(r => r.id === requestData.id)
+        if (!exists) {
+            pendingRequests.value.unshift(requestData)
+            pendingRequestCount.value++
+        }
+    }
+
+    /**
+     * 处理 WebSocket 好友申请被接受
+     */
+    function handleRequestAccepted(contactData) {
+        // 添加到联系人列表
+        addContact({
+            id: contactData.userId,
+            username: contactData.username,
+            nickname: contactData.nickname,
+            avatarUrl: contactData.avatarUrl,
+            avatar: contactData.avatarUrl,
+            isOnline: contactData.isOnline,
+            lastSeen: contactData.lastSeen,
+            email: contactData.email,
+            phone: contactData.phone
+        })
+        // 从已发送列表中移除相关申请
+        sentRequests.value = sentRequests.value.filter(
+            r => r.toUserId !== contactData.userId
+        )
+    }
+
+    /**
+     * 处理 WebSocket 好友申请被拒绝
+     */
+    function handleRequestRejected(data) {
+        // 从已发送列表中移除
+        sentRequests.value = sentRequests.value.filter(
+            r => r.id !== data.requestId
+        )
+    }
+
     return {
         contacts,
         onlineUsers,
         pendingRequests,
+        sentRequests,
+        pendingRequestCount,
         isLoading,
         onlineContacts,
         offlineContacts,
@@ -161,6 +304,15 @@ export const useContactStore = defineStore('contact', () => {
         searchUsers,
         addContactRequest,
         removeContactRequest,
-        getContactById
+        getContactById,
+        // 好友申请相关
+        fetchPendingRequests,
+        fetchSentRequests,
+        fetchPendingRequestCount,
+        acceptRequest,
+        rejectRequest,
+        handleNewRequest,
+        handleRequestAccepted,
+        handleRequestRejected
     }
 })

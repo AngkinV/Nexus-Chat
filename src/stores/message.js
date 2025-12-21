@@ -25,6 +25,25 @@ export const useMessageStore = defineStore('message', () => {
         }
     }
 
+    // Replace temporary message with real message from server
+    function replaceTemporaryMessage(chatId, senderId, realMessage) {
+        if (!messages.value[chatId]) return false
+
+        // Find the latest temporary message from this sender with matching content
+        const tempIndex = messages.value[chatId].findIndex(m =>
+            String(m.id).startsWith('temp-') &&
+            m.senderId === senderId &&
+            m.content === realMessage.content
+        )
+
+        if (tempIndex !== -1) {
+            // Replace temporary message with real one
+            messages.value[chatId][tempIndex] = realMessage
+            return true
+        }
+        return false
+    }
+
     function prependMessages(chatId, messageList) {
         if (!messages.value[chatId]) {
             messages.value[chatId] = []
@@ -66,6 +85,7 @@ export const useMessageStore = defineStore('message', () => {
         getMessages,
         setMessages,
         addMessage,
+        replaceTemporaryMessage,
         prependMessages,
         markMessageAsRead,
         addTypingUser,

@@ -146,7 +146,7 @@ const handleContactAdded = (contact) => {
 
 const handleContactSelect = async (contact) => {
   // Create or open direct chat with contact
-  await chatStore.createDirectChat(contact)
+  await chatStore.createDirectChat(userStore.currentUser?.id, contact)
   activeTab.value = 'chats'
 }
 

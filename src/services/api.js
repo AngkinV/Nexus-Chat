@@ -114,8 +114,9 @@ export const messageAPI = {
 
 // Contact API
 export const contactAPI = {
-    addContact: (userId, contactUserId) =>
-        apiClient.post('/contacts', { userId, contactUserId }),
+    // 添加联系人（会根据目标用户的隐私设置决定是直接添加还是发送申请）
+    addContact: (userId, contactUserId, message = null) =>
+        apiClient.post('/contacts', { userId, contactUserId, message }),
 
     removeContact: (userId, contactUserId) =>
         apiClient.delete('/contacts', { data: { userId, contactUserId } }),
@@ -128,7 +129,29 @@ export const contactAPI = {
         apiClient.get('/contacts/check', { params: { userId, contactUserId } }),
 
     getMutualContacts: (userId1, userId2) =>
-        apiClient.get('/contacts/mutual', { params: { userId1, userId2 } })
+        apiClient.get('/contacts/mutual', { params: { userId1, userId2 } }),
+
+    // ==================== 好友申请相关API ====================
+
+    // 获取待处理的好友申请（收到的）
+    getPendingRequests: (userId) =>
+        apiClient.get(`/contacts/requests/pending/${userId}`),
+
+    // 获取已发送的好友申请
+    getSentRequests: (userId) =>
+        apiClient.get(`/contacts/requests/sent/${userId}`),
+
+    // 获取待处理申请数量
+    getPendingRequestCount: (userId) =>
+        apiClient.get(`/contacts/requests/count/${userId}`),
+
+    // 接受好友申请
+    acceptRequest: (requestId, userId) =>
+        apiClient.post(`/contacts/requests/${requestId}/accept`, null, { params: { userId } }),
+
+    // 拒绝好友申请
+    rejectRequest: (requestId, userId) =>
+        apiClient.post(`/contacts/requests/${requestId}/reject`, null, { params: { userId } })
 }
 
 // File API

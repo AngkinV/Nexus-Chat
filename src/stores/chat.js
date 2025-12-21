@@ -6,6 +6,7 @@ export const useChatStore = defineStore('chat', () => {
     const activeChat = ref(null)
     const chats = ref([])
     const isLoading = ref(false)
+    const subscribedChatIds = ref(new Set()) // Track subscribed chat rooms
 
     const messages = ref([])
 
@@ -23,6 +24,43 @@ export const useChatStore = defineStore('chat', () => {
     const totalUnreadCount = computed(() => {
         return chats.value.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0)
     })
+
+    // Computed: Selected chat ID (for convenience)
+    const selectedChatId = computed(() => activeChat.value?.id || null)
+
+    // Update chat properties
+    const updateChat = (chatId, updates) => {
+        const chatIndex = chats.value.findIndex(c => c.id === chatId)
+        if (chatIndex !== -1) {
+            chats.value[chatIndex] = {
+                ...chats.value[chatIndex],
+                ...updates
+            }
+            // Move chat to top if lastMessage is updated
+            if (updates.lastMessage) {
+                const chat = chats.value.splice(chatIndex, 1)[0]
+                chats.value.unshift(chat)
+            }
+        }
+    }
+
+    // Increment unread count for a chat
+    const incrementUnreadCount = (chatId) => {
+        const chatIndex = chats.value.findIndex(c => c.id === chatId)
+        if (chatIndex !== -1) {
+            chats.value[chatIndex].unreadCount = (chats.value[chatIndex].unreadCount || 0) + 1
+        }
+    }
+
+    // Mark chat as subscribed
+    const markChatSubscribed = (chatId) => {
+        subscribedChatIds.value.add(chatId)
+    }
+
+    // Check if chat is subscribed
+    const isChatSubscribed = (chatId) => {
+        return subscribedChatIds.value.has(chatId)
+    }
 
     // Fetch chats from backend
     const fetchChats = async (userId) => {
@@ -126,7 +164,7 @@ export const useChatStore = defineStore('chat', () => {
         }
     }
 
-    const createDirectChat = async (contact) => {
+    const createDirectChat = async (userId, contact) => {
         // Check if chat already exists
         const existingChat = chats.value.find(
             c => c.type === 'DIRECT' && c.contactId === contact.id
@@ -138,16 +176,21 @@ export const useChatStore = defineStore('chat', () => {
         }
 
         try {
+            // Call backend API to create direct chat
+            const response = await chatAPI.createDirectChat(userId, contact.id)
+            const chatData = response.data
+
             const newChat = {
-                id: Date.now(),
+                id: chatData.id,
                 contactId: contact.id,
                 name: contact.nickname,
-                avatar: contact.avatar || '',
-                lastMessage: '',
-                lastMessageTime: new Date(),
+                avatar: contact.avatar || contact.avatarUrl || '',
+                lastMessage: chatData.lastMessage?.content || '',
+                lastMessageTime: chatData.lastMessageAt || new Date(),
                 unreadCount: 0,
                 online: contact.isOnline || false,
-                type: 'DIRECT'
+                type: 'DIRECT',
+                members: chatData.members
             }
 
             chats.value.unshift(newChat)
@@ -202,9 +245,11 @@ export const useChatStore = defineStore('chat', () => {
         chats,
         messages,
         isLoading,
+        subscribedChatIds,
         groupChats,
         directChats,
         totalUnreadCount,
+        selectedChatId,
         fetchChats,
         setActiveChat,
         toggleActiveChat,
@@ -214,6 +259,10 @@ export const useChatStore = defineStore('chat', () => {
         updateGroupInfo,
         leaveGroup,
         deleteChat,
-        getMessagesForChat
+        getMessagesForChat,
+        updateChat,
+        incrementUnreadCount,
+        markChatSubscribed,
+        isChatSubscribed
     }
 })

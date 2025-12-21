@@ -63,6 +63,9 @@
     "contact": {
         "addContact": "Add Contact",
         "removeContact": "Remove Contact",
+        "confirmRemove": "Are you sure you want to remove {name} from your contacts?",
+        "removeSuccess": "Contact removed successfully",
+        "removeFailed": "Failed to remove contact",
         "searchUsers": "Search users...",
         "searchPlaceholder": "Search by username, nickname or email",
         "noContacts": "No contacts yet",
@@ -81,7 +84,18 @@
         "recommended": "Recommended Contacts",
         "invalidUserId": "Please enter a valid User ID",
         "cannotAddSelf": "You cannot add yourself as a contact",
-        "userNotFound": "User not found"
+        "userNotFound": "User not found",
+        "requestSent": "Friend request sent to {name}",
+        "requestSentShort": "Request Sent",
+        "friendRequests": "Friend Requests",
+        "requestAccepted": "Friend request accepted",
+        "requestRejected": "Friend request rejected",
+        "acceptFailed": "Failed to accept request",
+        "rejectFailed": "Failed to reject request",
+        "confirmReject": "Reject friend request from {name}?",
+        "rejectRequest": "Reject Request",
+        "alreadySent": "Friend request already sent",
+        "alreadyContact": "Already a contact"
     },
     "group": {
         "createGroup": "Create Group",
@@ -114,6 +128,7 @@
         "usernameHint": "Username cannot be changed after creation",
         "bio": "Bio",
         "about": "About",
+        "contactInfo": "Contact Information",
         "nicknameRequired": "Nickname is required",
         "nicknameLength": "Nickname must be 2-30 characters",
         "privacySettings": "Privacy Settings",

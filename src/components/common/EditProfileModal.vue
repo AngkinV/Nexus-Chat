@@ -173,6 +173,7 @@
 import { ref, computed, watch, reactive } from 'vue'
 import { Camera, Delete, User, Message, Phone, Lock, Picture, Upload, Check } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { userAPI } from '@/services/api'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
@@ -294,17 +295,54 @@ const saveProfile = async () => {
     if (!valid) return
     isSaving.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
+      const userId = userStore.currentUser?.id
+      if (!userId) {
+        ElMessage.error('User not found')
+        return
+      }
+
+      // Update profile (nickname, bio, email, phone)
+      await userAPI.updateProfile(userId, {
+        nickname: form.value.nickname,
+        bio: form.value.bio,
+        email: form.value.email,
+        phone: form.value.phone
+      })
+
+      // Update privacy settings
+      await userAPI.updatePrivacySettings(userId, {
+        showOnlineStatus: form.value.showOnlineStatus,
+        showLastSeen: form.value.showLastSeen,
+        showPhone: form.value.showPhone,
+        showEmail: form.value.showEmail
+      })
+
+      // Update background if changed
+      const currentBackground = userStore.currentUser?.profileBackground
+      if (form.value.profileBackground && form.value.profileBackground !== currentBackground) {
+        await userStore.updateBackground(form.value.profileBackground)
+      }
+
+      // Update avatar if changed (base64)
+      const currentAvatar = userStore.currentUser?.avatar
+      if (form.value.avatar && form.value.avatar !== currentAvatar) {
+        if (form.value.avatar.startsWith('data:image')) {
+          await userAPI.uploadAvatarBase64(userId, { avatar: form.value.avatar })
+        }
+      }
+
+      // Update local state
       userStore.currentUser = {
         ...userStore.currentUser,
         ...form.value
       }
       localStorage.setItem('user', JSON.stringify(userStore.currentUser))
+
       emit('updated', userStore.currentUser)
       ElMessage.success(t('profile.updateSuccess'))
       handleClose()
     } catch (error) {
+      console.error('Profile update error:', error)
       ElMessage.error(t('profile.updateFailed'))
     } finally {
       isSaving.value = false
