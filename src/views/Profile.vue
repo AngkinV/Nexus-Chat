@@ -378,7 +378,7 @@ const formatTime = (time) => {
 }
 
 .default-gradient {
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  background: linear-gradient(135deg, #3b82f6, #359ad0);
 }
 
 .back-btn {
@@ -599,7 +599,7 @@ const formatTime = (time) => {
 }
 
 .blue-bg { background: #3b82f6; }
-.purple-bg { background: #8b5cf6; }
+.purple-bg { background: #4cd7f6; }
 .green-bg { background: #10b981; }
 
 .stat-info {

@@ -3,7 +3,7 @@
     <div class="login-card">
       <div class="logo-area">
         <div class="logo-circle">
-          <el-icon :size="64" color="#ffffff"><Promotion /></el-icon>
+          <img src="@/assets/images/logo.jpg" alt="Logo" class="logo-img" />
         </div>
         <h1>{{ $t('app.name') }}</h1>
         <p>{{ $t('app.tagline') }}</p>
@@ -154,7 +154,7 @@ import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
-import { Promotion, Camera, User, Lock, Message, Iphone, Postcard } from '@element-plus/icons-vue'
+import { Camera, User, Lock, Message, Iphone, Postcard } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const { t } = useI18n()
@@ -298,13 +298,18 @@ const handleRegister = async () => {
 .logo-circle {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #2481cc 0%, #00a8ff 100%);
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 0 auto 16px;
-  box-shadow: 0 8px 16px rgba(36, 129, 204, 0.3);
+  overflow: hidden;
+}
+
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 h1 {
