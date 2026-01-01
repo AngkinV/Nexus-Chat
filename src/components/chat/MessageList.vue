@@ -6,30 +6,41 @@
       class="message-wrapper"
       :class="{ 'sent': msg.isSelf }"
     >
-      <div class="message-bubble">
-        <div v-if="!msg.isSelf" class="sender-name">{{ msg.senderName }}</div>
-        
-        <!-- Text Message -->
-        <div v-if="msg.type === 'TEXT'" class="message-text">
-          {{ msg.content }}
+      <!-- Avatar for received messages -->
+      <div v-if="!msg.isSelf" class="message-avatar">
+        <el-avatar :size="36" :src="msg.senderAvatar || defaultAvatar" />
+      </div>
+
+      <div class="message-content">
+        <div class="message-bubble" :class="msg.isSelf ? 'bubble-out' : 'bubble-in'">
+          <div v-if="!msg.isSelf" class="sender-name">{{ msg.senderName }}</div>
+
+          <!-- Text Message -->
+          <div v-if="msg.type === 'TEXT'" class="message-text">
+            {{ msg.content }}
+          </div>
+
+          <!-- Image Message -->
+          <div v-else-if="msg.type === 'IMAGE'" class="message-image">
+            <el-image
+              :src="msg.content"
+              :preview-src-list="[msg.content]"
+              fit="cover"
+              class="image-content"
+            />
+          </div>
         </div>
 
-        <!-- Image Message -->
-        <div v-else-if="msg.type === 'IMAGE'" class="message-image">
-          <el-image 
-            :src="msg.content" 
-            :preview-src-list="[msg.content]"
-            fit="cover"
-            class="image-content"
-          />
-        </div>
-
-        <div class="message-meta">
+        <div class="message-meta" :class="{ 'meta-sent': msg.isSelf }">
           <span class="message-time">{{ formatTime(msg.timestamp) }}</span>
-          <el-icon v-if="msg.isSelf" class="read-status" :size="14">
-            <Check v-if="!msg.read" />
-            <span v-else class="double-check">✓✓</span>
-          </el-icon>
+          <span v-if="msg.isSelf" class="read-status">
+            <svg v-if="msg.read" class="check-icon read" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M2 12l5 5L20 4M7 12l5 5L22 4" />
+            </svg>
+            <svg v-else class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12l5 5L20 7" />
+            </svg>
+          </span>
         </div>
       </div>
     </div>
@@ -38,7 +49,6 @@
 
 <script setup>
 import { ref, onUpdated, watch } from 'vue'
-import { Check } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
 const props = defineProps({
@@ -49,6 +59,7 @@ const props = defineProps({
 })
 
 const listRef = ref(null)
+const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
 const scrollToBottom = () => {
   if (listRef.value) {
@@ -73,57 +84,116 @@ const formatTime = (time) => {
 .message-list {
   height: 100%;
   overflow-y: auto;
-  padding: 10px 20px;
+  padding: 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .message-wrapper {
   display: flex;
-  margin-bottom: 5px;
+  gap: 12px;
+  max-width: 70%;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message-wrapper.sent {
-  justify-content: flex-end;
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 20px;
+}
+
+.message-avatar .el-avatar {
+  border: 2px solid var(--tg-surface);
+  box-shadow: var(--tg-shadow-sm);
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.message-wrapper.sent .message-content {
+  align-items: flex-end;
 }
 
 .message-bubble {
-  max-width: 70%;
-  padding: 8px 12px;
-  border-radius: 12px;
+  padding: 16px 20px;
   position: relative;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  background: #ffffff;
+  box-shadow: var(--tg-shadow-soft);
+  transition: transform 0.2s ease;
 }
 
-.message-wrapper.sent .message-bubble {
-  background: #e3f2fd; /* Light blue for sent */
-  border-bottom-right-radius: 2px;
+.message-bubble:hover {
+  transform: scale(1.01);
 }
 
-.message-wrapper:not(.sent) .message-bubble {
-  background: #ffffff;
-  border-bottom-left-radius: 2px;
+/* Received message bubble */
+.bubble-in {
+  background: var(--tg-message-in);
+  border-radius: 24px 24px 24px 4px;
+  border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.bubble-in .message-text {
+  color: var(--tg-text-primary);
+}
+
+.bubble-in .sender-name {
+  color: var(--tg-primary);
+}
+
+[data-theme="dark"] .bubble-in {
+  border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+/* Sent message bubble */
+.bubble-out {
+  background: linear-gradient(135deg, #0891B2 0%, #059669 100%);
+  border-radius: 24px 24px 4px 24px;
+  box-shadow: var(--tg-shadow-float);
+}
+
+.bubble-out .message-text {
+  color: #FFFFFF !important;
 }
 
 .sender-name {
   font-size: 13px;
-  color: #e65100; /* Distinct color for names */
-  font-weight: 600;
-  margin-bottom: 4px;
+  color: var(--tg-primary);
+  font-weight: 700;
+  margin-bottom: 6px;
 }
 
 .message-text {
   font-size: 15px;
-  line-height: 1.4;
-  color: #1c1c1e;
+  line-height: 1.5;
+  color: var(--tg-text-primary);
   word-wrap: break-word;
 }
 
 .message-image {
   max-width: 300px;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -136,23 +206,34 @@ const formatTime = (time) => {
 .message-meta {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  margin-top: 2px;
+  gap: 6px;
+  padding-left: 4px;
+}
+
+.message-meta.meta-sent {
+  padding-right: 4px;
+  padding-left: 0;
 }
 
 .message-time {
   font-size: 11px;
-  color: #aeb5bc;
+  color: var(--tg-text-tertiary);
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
 .read-status {
-  color: #3390ec;
+  display: flex;
+  align-items: center;
 }
 
-.double-check {
-  font-size: 10px;
-  letter-spacing: -3px;
-  font-weight: bold;
+.check-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--tg-text-tertiary);
+}
+
+.check-icon.read {
+  color: var(--tg-primary);
 }
 </style>

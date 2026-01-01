@@ -1,14 +1,18 @@
 <template>
   <div class="group-list">
     <div v-if="filteredGroups.length === 0" class="empty-state">
-      <div class="empty-icon">
-        <el-icon :size="48"><User /></el-icon>
+      <div class="empty-icon-wrapper">
+        <div class="empty-icon-glow"></div>
+        <div class="empty-icon">
+          <el-icon :size="48"><User /></el-icon>
+        </div>
       </div>
-      <p class="empty-text">{{ $t('group.noGroups') }}</p>
-      <el-button type="primary" @click="$emit('create')">
+      <h3 class="empty-title">{{ $t('group.noGroups') }}</h3>
+      <p class="empty-text">Join a group or create a new one to start chatting with friends</p>
+      <button class="create-group-btn" @click="$emit('create')">
         <el-icon><Plus /></el-icon>
         {{ $t('group.createGroup') }}
-      </el-button>
+      </button>
     </div>
 
     <template v-else>
@@ -29,7 +33,7 @@
             <el-icon :size="12"><Lock /></el-icon>
           </span>
         </div>
-        
+
         <div class="group-content">
           <div class="group-header">
             <span class="group-name">{{ group.name }}</span>
@@ -110,45 +114,120 @@ const formatTime = (time) => {
   padding: 5px 0;
 }
 
+/* Empty State */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 50px 20px;
-  gap: 15px;
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.empty-icon-wrapper {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.empty-icon-glow {
+  position: absolute;
+  inset: -10px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%);
+  border-radius: 50%;
+  filter: blur(20px);
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
 }
 
 .empty-icon {
-  width: 80px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
   display: flex;
   justify-content: center;
   align-items: center;
-  color: white;
+  position: relative;
+  z-index: 1;
+}
+
+.empty-icon .el-icon {
+  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
 }
 
 .empty-text {
-  color: #999;
+  color: #64748b;
   font-size: 14px;
+  margin: 0 0 32px 0;
+  max-width: 220px;
+  line-height: 1.5;
 }
 
+.create-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
+  border: none;
+  border-radius: 14px;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px -4px rgba(14, 165, 233, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.create-group-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 28px -4px rgba(14, 165, 233, 0.5);
+}
+
+.create-group-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 4px 12px -2px rgba(14, 165, 233, 0.4);
+}
+
+.create-group-btn .el-icon {
+  font-size: 18px;
+}
+
+/* Group Item */
 .group-item {
   display: flex;
   gap: 12px;
-  padding: 12px 15px;
+  padding: 12px 16px;
+  margin: 4px 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  border-radius: 16px;
+  transition: all 0.2s ease;
 }
 
 .group-item:hover {
-  background: #f5f5f5;
+  background: rgba(14, 165, 233, 0.06);
+}
+
+.group-item:active {
+  transform: scale(0.99);
 }
 
 .group-item.active {
-  background: #e3f2fd;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%);
 }
 
 .group-avatar {
@@ -156,10 +235,11 @@ const formatTime = (time) => {
 }
 
 .group-avatar .el-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
   color: white;
   font-weight: 600;
   font-size: 16px;
+  box-shadow: 0 4px 12px -2px rgba(14, 165, 233, 0.3);
 }
 
 .private-badge {
@@ -169,12 +249,13 @@ const formatTime = (time) => {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #8774e1;
+  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
   color: white;
   display: flex;
   justify-content: center;
   align-items: center;
   border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(14, 165, 233, 0.3);
 }
 
 .group-content {
@@ -194,16 +275,22 @@ const formatTime = (time) => {
 .group-name {
   font-weight: 600;
   font-size: 15px;
-  color: #333;
+  color: #1e293b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.2s ease;
+}
+
+.group-item:hover .group-name {
+  color: #0ea5e9;
 }
 
 .group-time {
   font-size: 12px;
-  color: #999;
+  color: #94a3b8;
   flex-shrink: 0;
+  font-weight: 500;
 }
 
 .group-footer {
@@ -214,7 +301,7 @@ const formatTime = (time) => {
 
 .group-message {
   font-size: 13px;
-  color: #999;
+  color: #64748b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -222,13 +309,15 @@ const formatTime = (time) => {
 }
 
 .unread-badge {
-  background: #3390ec;
+  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
   color: white;
   font-size: 11px;
-  padding: 2px 7px;
+  font-weight: 700;
+  padding: 2px 8px;
   border-radius: 10px;
-  min-width: 18px;
+  min-width: 20px;
   text-align: center;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
 }
 
 .group-meta {
@@ -236,10 +325,48 @@ const formatTime = (time) => {
   align-items: center;
   gap: 5px;
   font-size: 12px;
-  color: #aaa;
+  color: #94a3b8;
 }
 
 .group-meta .el-icon {
   font-size: 14px;
+  color: #0ea5e9;
+}
+
+/* Dark Mode */
+[data-theme="dark"] .empty-title {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .empty-text {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .empty-icon {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+}
+
+[data-theme="dark"] .group-item:hover {
+  background: rgba(14, 165, 233, 0.1);
+}
+
+[data-theme="dark"] .group-item.active {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
+}
+
+[data-theme="dark"] .group-name {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .group-item:hover .group-name {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .group-message {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .private-badge {
+  border-color: #1e293b;
 }
 </style>

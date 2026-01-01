@@ -1,5 +1,7 @@
 <template>
   <div class="login-container">
+    <!-- Drag region for window dragging -->
+    <div class="drag-region"></div>
     <div class="login-card">
       <div class="logo-area">
         <div class="logo-circle">
@@ -277,6 +279,18 @@ const handleRegister = async () => {
   align-items: center;
   background-color: #f0f2f5;
   font-family: 'Inter', sans-serif;
+  position: relative;
+}
+
+/* Drag region for window dragging */
+.drag-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  -webkit-app-region: drag;
+  z-index: 1000;
 }
 
 .login-card {

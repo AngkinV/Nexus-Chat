@@ -1,36 +1,43 @@
 <template>
-  <div class="message-input-container">
-    <el-button text circle class="action-btn" @click="triggerUpload">
-      <el-icon :size="24" color="#707579"><Paperclip /></el-icon>
-    </el-button>
-    
+  <div class="input-container">
     <div class="input-wrapper">
-      <el-input
-        v-model="content"
-        type="textarea"
-        :autosize="{ minRows: 1, maxRows: 4 }"
-        placeholder="Write a message..."
-        resize="none"
-        class="custom-textarea"
-        @keydown.enter.prevent="handleEnter"
-      />
-      <el-button text circle class="emoji-btn">
-        <el-icon :size="24" color="#707579"><Sunny /></el-icon> <!-- Placeholder for Emoji -->
-      </el-button>
+      <button class="input-btn attach-btn" @click="triggerUpload" title="Attach file">
+        <el-icon :size="24"><Plus /></el-icon>
+      </button>
+
+      <div class="input-field">
+        <el-input
+          v-model="content"
+          type="textarea"
+          :autosize="{ minRows: 1, maxRows: 4 }"
+          placeholder="Type a message..."
+          resize="none"
+          class="custom-textarea"
+          @keydown.enter.prevent="handleEnter"
+        />
+      </div>
+
+      <div class="input-actions">
+        <button class="input-btn emoji-btn" title="Emoji">
+          <el-icon :size="22"><Sunny /></el-icon>
+        </button>
+        <button v-if="!content.trim()" class="input-btn mic-btn" title="Voice message">
+          <el-icon :size="22"><Microphone /></el-icon>
+        </button>
+        <button
+          v-else
+          class="send-btn"
+          @click="sendMessage"
+          title="Send message"
+        >
+          <el-icon :size="22"><Promotion /></el-icon>
+        </button>
+      </div>
     </div>
 
-    <el-button 
-      v-if="content.trim()" 
-      circle 
-      type="primary" 
-      class="send-btn"
-      @click="sendMessage"
-    >
-      <el-icon><Promotion /></el-icon>
-    </el-button>
-    <el-button v-else circle class="mic-btn">
-      <el-icon :size="24" color="#707579"><Microphone /></el-icon>
-    </el-button>
+    <div class="input-hint">
+      <span>Press <strong>Enter</strong> to send</span>
+    </div>
 
     <FileUpload
       ref="fileUploadRef"
@@ -42,7 +49,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Paperclip, Sunny, Microphone, Promotion } from '@element-plus/icons-vue'
+import { Plus, Sunny, Microphone, Promotion } from '@element-plus/icons-vue'
 import FileUpload from '@/components/common/FileUpload.vue'
 
 const emit = defineEmits(['send'])
@@ -74,7 +81,7 @@ const handleUploadComplete = (fileData) => {
   if (fileData.type.startsWith('image/')) {
     type = 'IMAGE'
   }
-  
+
   // For now, we just emit the URL (or mock URL)
   // In a real app, we might want to send a structured object
   emit('send', fileData.url, type)
@@ -86,23 +93,64 @@ const handleUploadError = (error) => {
 </script>
 
 <style scoped>
-.message-input-container {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  padding: 10px 0;
-}
-
-.action-btn {
-  margin-bottom: 4px;
+.input-container {
+  padding: 8px 0;
 }
 
 .input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  background: var(--tg-surface);
+  border-radius: 9999px;
+  box-shadow: var(--tg-shadow-lg);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  transition: var(--tg-transition-slow);
+}
+
+.input-wrapper:focus-within {
+  box-shadow: var(--tg-shadow-lg), 0 0 0 4px rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.3);
+}
+
+[data-theme="dark"] .input-wrapper {
+  border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.input-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  color: var(--tg-text-secondary);
+  cursor: pointer;
+  transition: var(--tg-transition);
+  flex-shrink: 0;
+}
+
+.attach-btn:hover {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--tg-secondary);
+}
+
+.emoji-btn:hover {
+  background: rgba(251, 191, 36, 0.1);
+  color: #F59E0B;
+}
+
+.mic-btn:hover {
+  background: rgba(6, 182, 212, 0.1);
+  color: var(--tg-primary);
+}
+
+.input-field {
   flex: 1;
-  position: relative;
-  background: #f1f1f1;
-  border-radius: 20px;
-  padding: 2px 10px;
+  min-height: 44px;
   display: flex;
   align-items: center;
 }
@@ -111,32 +159,67 @@ const handleUploadError = (error) => {
   background: transparent;
   box-shadow: none;
   border: none;
-  padding: 10px 30px 10px 0; /* Space for emoji btn */
+  padding: 10px 0;
   max-height: 150px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--tg-text-primary);
+  line-height: 1.5;
 }
 
-.emoji-btn {
-  position: absolute;
-  right: 5px;
-  bottom: 2px;
+.custom-textarea :deep(.el-textarea__inner)::placeholder {
+  color: var(--tg-text-tertiary);
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .send-btn {
-  margin-bottom: 4px;
-  width: 40px;
-  height: 40px;
-  font-size: 20px;
-}
-
-.mic-btn {
-  margin-bottom: 4px;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
-  background: transparent;
+  background: var(--tg-gradient-primary);
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  transition: var(--tg-transition);
+  box-shadow: 0 4px 15px -3px rgba(6, 182, 212, 0.4);
+  flex-shrink: 0;
 }
 
-.mic-btn:hover {
-  background: #f1f1f1;
+.send-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px -3px rgba(6, 182, 212, 0.5);
+}
+
+.send-btn:active {
+  transform: scale(0.95);
+}
+
+.send-btn .el-icon {
+  margin-left: 2px;
+}
+
+.input-hint {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.input-hint span {
+  font-size: 11px;
+  color: var(--tg-text-tertiary);
+  font-weight: 500;
+}
+
+.input-hint strong {
+  color: var(--tg-text-secondary);
+  font-weight: 700;
 }
 </style>

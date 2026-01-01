@@ -1,5 +1,7 @@
 <template>
   <div class="profile-dashboard custom-scrollbar">
+    <!-- Drag region for window dragging -->
+    <div class="drag-region"></div>
     <div class="dashboard-container animate-fade-in">
       
       <!-- LEFT SIDEBAR: Identity & Navigation -->
@@ -325,6 +327,18 @@ const formatTime = (time) => {
   align-items: center;
   padding: 40px;
   box-sizing: border-box;
+  position: relative;
+}
+
+/* Drag region for window dragging */
+.drag-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  -webkit-app-region: drag;
+  z-index: 1000;
 }
 
 [data-theme="dark"] .profile-dashboard {

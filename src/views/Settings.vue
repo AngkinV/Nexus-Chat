@@ -1,5 +1,7 @@
 <template>
   <div class="settings-container">
+    <!-- Drag region for window dragging -->
+    <div class="drag-region"></div>
     <div class="settings-header">
       <el-button circle @click="goBack">
         <el-icon><ArrowLeft /></el-icon>
@@ -203,6 +205,18 @@ const savePrivacySettings = () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+}
+
+/* Drag region for window dragging */
+.drag-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  -webkit-app-region: drag;
+  z-index: 1000;
 }
 
 /* 全局隐藏滚动条 */
@@ -218,6 +232,7 @@ const savePrivacySettings = () => {
 .settings-header {
   background: white;
   padding: 16px 20px;
+  padding-top: 40px; /* Extra padding for drag region */
   display: flex;
   align-items: center;
   gap: 16px;

@@ -1,24 +1,16 @@
 <template>
   <div class="app-container">
-    <TitleBar v-if="isElectron" />
-    <div class="app-content">
-      <router-view />
-    </div>
+    <router-view />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import TitleBar from '@/components/common/TitleBar.vue'
 
 const userStore = useUserStore()
-const isElectron = ref(false)
 
 onMounted(() => {
-  // Check if running in Electron
-  isElectron.value = !!window.electronAPI
-  
   // Check if user is logged in
   const token = localStorage.getItem('token')
   if (token) {
@@ -41,7 +33,7 @@ html, body {
 }
 
 #app {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   width: 100vw;
@@ -57,21 +49,12 @@ html, body {
   overflow: hidden;
 }
 
-.app-content {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Ensure Element Plus message components appear above custom title bar */
+/* Ensure Element Plus message components appear correctly */
 .el-message {
   z-index: 10001 !important;
-  margin-top: 40px !important; /* Account for title bar height */
 }
 
 .el-notification {
   z-index: 10001 !important;
-  margin-top: 40px !important;
 }
 </style>

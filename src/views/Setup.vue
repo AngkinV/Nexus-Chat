@@ -1,5 +1,7 @@
 <template>
   <div class="setup-container">
+    <!-- Drag region for window dragging -->
+    <div class="drag-region"></div>
     <div class="setup-card">
       <div class="logo-section">
         <div class="logo-circle">
@@ -118,6 +120,18 @@ const completeSetup = () => {
   height: 100vh;
   background-color: var(--bg-color, #ffffff);
   color: var(--text-color, #000000);
+  position: relative;
+}
+
+/* Drag region for window dragging */
+.drag-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  -webkit-app-region: drag;
+  z-index: 1000;
 }
 
 .setup-card {

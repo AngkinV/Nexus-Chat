@@ -1,7 +1,7 @@
 <template>
   <div class="main-layout">
-    <LeftPanel class="panel-left" />
-    <MiddlePanel class="panel-middle" />
+    <LeftPanel class="panel-left" ref="leftPanelRef" />
+    <MiddlePanel class="panel-middle" @open-new-chat="handleOpenNewChat" />
     <RightPanel class="panel-right" :class="{ 'collapsed': !showRightPanel }" />
   </div>
 </template>
@@ -21,6 +21,17 @@ const contactStore = useContactStore()
 const chatStore = useChatStore()
 
 const showRightPanel = ref(false)
+const leftPanelRef = ref(null)
+
+// Handle open new chat from MiddlePanel
+const handleOpenNewChat = () => {
+  // Trigger the create group modal in LeftPanel
+  // This is a simple approach - you could also use provide/inject or event bus
+  if (leftPanelRef.value) {
+    // LeftPanel already has its own openNewChat method
+    leftPanelRef.value.$el.querySelector('.icon-btn-new')?.click()
+  }
+}
 
 // Provide global state for panels
 provide('toggleRightPanel', () => {
@@ -73,18 +84,25 @@ const subscribeToAllChats = () => {
   display: flex;
   width: 100vw;
   height: 100vh;
-  background: #ffffff;
+  background: #f8fafc;
   overflow: hidden;
+  transition: background 0.3s ease;
 }
 
 .panel-left {
-  width: 25%;
-  min-width: 280px;
-  max-width: 400px;
-  border-right: 1px solid #e5e5e5;
+  width: 380px;
+  min-width: 320px;
+  max-width: 420px;
+  border-right: 1px solid #f1f5f9;
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10;
+  position: relative;
+  transition: all 0.3s ease;
 }
 
 .panel-middle {
@@ -93,31 +111,66 @@ const subscribeToAllChats = () => {
   display: flex;
   flex-direction: column;
   min-width: 400px;
+  position: relative;
+  background: transparent;
+  z-index: 1;
 }
 
 .panel-right {
   width: 25%;
-  min-width: 250px;
-  max-width: 350px;
-  border-left: 1px solid #e5e5e5;
+  min-width: 280px;
+  max-width: 380px;
+  border-left: 1px solid #f1f5f9;
   height: 100%;
-  transition: margin-right 0.3s ease;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 5;
+  position: relative;
 }
 
 .panel-right.collapsed {
-  margin-right: -25%; /* Hide by moving off-screen */
-  display: none; /* Or use display: none for simpler handling */
+  margin-right: -25%;
+  display: none;
+}
+
+/* Dark Mode */
+[data-theme="dark"] .main-layout {
+  background: #0F1115;
+}
+
+[data-theme="dark"] .panel-left {
+  background: rgba(24, 27, 33, 0.8);
+  border-right-color: #232730;
+}
+
+[data-theme="dark"] .panel-right {
+  background: rgba(24, 27, 33, 0.9);
+  border-left-color: #232730;
 }
 
 @media (max-width: 900px) {
+  .panel-left {
+    width: 100%;
+    max-width: none;
+  }
+
+  .panel-middle {
+    display: none;
+  }
+
   .panel-right {
     position: absolute;
     right: 0;
     top: 0;
     bottom: 0;
-    background: white;
     z-index: 100;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="dark"] .panel-right {
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
   }
 }
 </style>
