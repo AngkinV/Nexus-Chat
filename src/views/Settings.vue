@@ -180,8 +180,8 @@ const handleLanguageChange = (lang) => {
   localStorage.setItem('locale', lang)
 }
 
-const handleLogout = () => {
-  userStore.logout()
+const handleLogout = async () => {
+  await userStore.logout()
   router.push('/login')
 }
 
