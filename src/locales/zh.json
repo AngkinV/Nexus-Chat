@@ -41,6 +41,7 @@
         "selectChat": "选择聊天以开始对话",
         "typeMessage": "输入消息...",
         "send": "发送",
+        "sendFailed": "消息发送失败",
         "online": "在线",
         "offline": "离线",
         "lastSeen": "最后在线",

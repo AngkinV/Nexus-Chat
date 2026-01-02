@@ -70,19 +70,23 @@ export const useChatStore = defineStore('chat', () => {
             const chatList = response.data || []
 
             // Transform backend data to frontend format
-            chats.value = chatList.map(chat => ({
-                id: chat.id,
-                name: chat.name,
-                avatar: chat.members?.find(m => m.id !== userId)?.avatarUrl || '',
-                lastMessage: chat.lastMessage?.content || '',
-                lastMessageTime: chat.lastMessage?.createdAt || chat.lastMessageAt,
-                unreadCount: chat.unreadCount || 0,
-                online: chat.members?.find(m => m.id !== userId)?.isOnline || false,
-                type: chat.type === 'direct' ? 'DIRECT' : 'GROUP',
-                members: chat.members,
-                memberCount: chat.members?.length || 0,
-                contactId: chat.type === 'direct' ? chat.members?.find(m => m.id !== userId)?.id : null
-            }))
+            chats.value = chatList.map(chat => {
+                const isOnline = chat.members?.find(m => m.id !== userId)?.isOnline || false
+                return {
+                    id: chat.id,
+                    name: chat.name,
+                    avatar: chat.members?.find(m => m.id !== userId)?.avatarUrl || '',
+                    lastMessage: chat.lastMessage?.content || '',
+                    lastMessageTime: chat.lastMessage?.createdAt || chat.lastMessageAt,
+                    unreadCount: chat.unreadCount || 0,
+                    online: isOnline,
+                    status: isOnline ? 'online' : 'offline',
+                    type: chat.type === 'direct' ? 'DIRECT' : 'GROUP',
+                    members: chat.members,
+                    memberCount: chat.members?.length || 0,
+                    contactId: chat.type === 'direct' ? chat.members?.find(m => m.id !== userId)?.id : null
+                }
+            })
         } catch (error) {
             console.error('Failed to fetch chats:', error)
         } finally {
@@ -189,6 +193,7 @@ export const useChatStore = defineStore('chat', () => {
                 lastMessageTime: chatData.lastMessageAt || new Date(),
                 unreadCount: 0,
                 online: contact.isOnline || false,
+                status: contact.isOnline ? 'online' : 'offline',
                 type: 'DIRECT',
                 members: chatData.members
             }
@@ -236,8 +241,51 @@ export const useChatStore = defineStore('chat', () => {
         }
     }
 
+    // Handle chat disabled (contact removed)
+    const handleChatDisabled = (chatId) => {
+        // Remove from chat list
+        const chatIndex = chats.value.findIndex(c => c.id === chatId)
+        if (chatIndex !== -1) {
+            chats.value.splice(chatIndex, 1)
+        }
+
+        // Clear active chat if it's the disabled one
+        if (activeChat.value?.id === chatId) {
+            activeChat.value = null
+        }
+
+        // Remove from subscribed list
+        subscribedChatIds.value.delete(chatId)
+    }
+
     const getMessagesForChat = (chatId) => {
         return messages.value.filter(m => m.chatId === chatId)
+    }
+
+    // 更新聊天中成员的在线状态（用于WebSocket实时同步）
+    const updateMemberOnlineStatus = (userId, isOnline) => {
+        // 更新 chats 列表中的状态
+        chats.value.forEach(chat => {
+            if (chat.type === 'DIRECT' && chat.contactId === userId) {
+                chat.online = isOnline
+                chat.status = isOnline ? 'online' : 'offline'
+            }
+            // 更新群聊成员状态
+            if (chat.members) {
+                const member = chat.members.find(m => m.id === userId)
+                if (member) {
+                    member.isOnline = isOnline
+                }
+            }
+        })
+
+        // 如果 activeChat 是受影响的聊天，重新赋值以确保响应式更新
+        if (activeChat.value && activeChat.value.type === 'DIRECT' && activeChat.value.contactId === userId) {
+            const updatedChat = chats.value.find(c => c.id === activeChat.value.id)
+            if (updatedChat) {
+                activeChat.value = { ...updatedChat }
+            }
+        }
     }
 
     return {
@@ -259,10 +307,12 @@ export const useChatStore = defineStore('chat', () => {
         updateGroupInfo,
         leaveGroup,
         deleteChat,
+        handleChatDisabled,
         getMessagesForChat,
         updateChat,
         incrementUnreadCount,
         markChatSubscribed,
-        isChatSubscribed
+        isChatSubscribed,
+        updateMemberOnlineStatus
     }
 })

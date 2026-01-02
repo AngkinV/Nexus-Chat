@@ -9,10 +9,6 @@
       </div>
       <h3 class="empty-title">{{ $t('group.noGroups') }}</h3>
       <p class="empty-text">Join a group or create a new one to start chatting with friends</p>
-      <button class="create-group-btn" @click="$emit('create')">
-        <el-icon><Plus /></el-icon>
-        {{ $t('group.createGroup') }}
-      </button>
     </div>
 
     <template v-else>
@@ -55,7 +51,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { User, Plus, Lock } from '@element-plus/icons-vue'
+import { User, Lock } from '@element-plus/icons-vue'
 import { useChatStore } from '@/stores/chat'
 import dayjs from 'dayjs'
 
@@ -66,7 +62,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['select', 'create'])
+const emit = defineEmits(['select'])
 
 const chatStore = useChatStore()
 const defaultGroupAvatar = ''
@@ -114,13 +110,14 @@ const formatTime = (time) => {
   padding: 5px 0;
 }
 
-/* Empty State */
+/* Empty State - Blue-Green Theme */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 24px;
+  height: 400px;
+  padding: 0 24px;
   text-align: center;
 }
 
@@ -131,31 +128,43 @@ const formatTime = (time) => {
 
 .empty-icon-glow {
   position: absolute;
-  inset: -10px;
+  inset: 0;
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%);
   border-radius: 50%;
-  filter: blur(20px);
-  animation: pulse-glow 3s ease-in-out infinite;
+  filter: blur(24px);
+  animation: pulse-slow 4s ease-in-out infinite;
 }
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.1); }
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.15);
+  }
 }
 
 .empty-icon {
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
-  z-index: 1;
+  z-index: 10;
+  transition: transform 0.3s ease;
+}
+
+.empty-icon:hover {
+  transform: scale(1.05);
 }
 
 .empty-icon .el-icon {
+  font-size: 48px;
   background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -167,44 +176,15 @@ const formatTime = (time) => {
   font-weight: 700;
   color: #1e293b;
   margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
 }
 
 .empty-text {
   color: #64748b;
   font-size: 14px;
   margin: 0 0 32px 0;
-  max-width: 220px;
-  line-height: 1.5;
-}
-
-.create-group-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
-  border: none;
-  border-radius: 14px;
-  color: white;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 24px -4px rgba(14, 165, 233, 0.4);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.create-group-btn:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 12px 28px -4px rgba(14, 165, 233, 0.5);
-}
-
-.create-group-btn:active {
-  transform: translateY(0) scale(0.98);
-  box-shadow: 0 4px 12px -2px rgba(14, 165, 233, 0.4);
-}
-
-.create-group-btn .el-icon {
-  font-size: 18px;
+  max-width: 200px;
+  line-height: 1.6;
 }
 
 /* Group Item */
@@ -333,17 +313,25 @@ const formatTime = (time) => {
   color: #0ea5e9;
 }
 
-/* Dark Mode */
+/* Dark Mode - Blue-Green Theme */
+[data-theme="dark"] .empty-state {
+  background: transparent;
+}
+
+[data-theme="dark"] .empty-icon {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
+}
+
+[data-theme="dark"] .empty-icon-glow {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+}
+
 [data-theme="dark"] .empty-title {
   color: #e2e8f0;
 }
 
 [data-theme="dark"] .empty-text {
   color: #94a3b8;
-}
-
-[data-theme="dark"] .empty-icon {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
 }
 
 [data-theme="dark"] .group-item:hover {

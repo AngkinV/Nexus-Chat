@@ -184,19 +184,17 @@ const handleUploadError = (error) => {
   align-items: center;
   justify-content: center;
   border: none;
-  background: var(--tg-gradient-primary);
+  background: rgba(6, 182, 212, 0.1);
   border-radius: 50%;
-  color: white;
+  color: #0891b2;
   cursor: pointer;
   transition: var(--tg-transition);
-  box-shadow: 0 4px 15px -3px rgba(6, 182, 212, 0.4);
   flex-shrink: 0;
 }
 
 .send-btn:hover {
-  opacity: 0.9;
+  background: rgba(6, 182, 212, 0.2);
   transform: scale(1.05);
-  box-shadow: 0 6px 20px -3px rgba(6, 182, 212, 0.5);
 }
 
 .send-btn:active {

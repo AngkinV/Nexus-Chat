@@ -33,7 +33,12 @@
 
         <div class="message-meta" :class="{ 'meta-sent': msg.isSelf }">
           <span class="message-time">{{ formatTime(msg.timestamp) }}</span>
-          <span v-if="msg.isSelf" class="read-status">
+          <!-- Failed indicator -->
+          <span v-if="msg.isSelf && msg.failed" class="failed-status" :title="$t('chat.sendFailed')">
+            <el-icon color="#ef4444" :size="16"><WarningFilled /></el-icon>
+          </span>
+          <!-- Read status -->
+          <span v-else-if="msg.isSelf" class="read-status">
             <svg v-if="msg.read" class="check-icon read" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M2 12l5 5L20 4M7 12l5 5L22 4" />
             </svg>
@@ -49,6 +54,7 @@
 
 <script setup>
 import { ref, onUpdated, watch } from 'vue'
+import { WarningFilled } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
 const props = defineProps({
@@ -235,5 +241,11 @@ const formatTime = (time) => {
 
 .check-icon.read {
   color: var(--tg-primary);
+}
+
+.failed-status {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
 }
 </style>

@@ -41,6 +41,7 @@
         "selectChat": "Select a chat to start messaging",
         "typeMessage": "Type a message...",
         "send": "Send",
+        "sendFailed": "Message send failed",
         "online": "Online",
         "offline": "Offline",
         "lastSeen": "Last seen",

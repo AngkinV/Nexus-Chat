@@ -81,7 +81,7 @@ class WebSocketService {
         this.client.subscribe('/topic/users', this.handleUserStatus.bind(this))
 
         // Subscribe to contact events (friend requests, etc.)
-        this.client.subscribe('/user/queue/contacts', this.handleContactEvent.bind(this))
+        this.client.subscribe(`/topic/user.${userId}.contacts`, this.handleContactEvent.bind(this))
 
         // Subscribe to chat events (new chats created)
         this.client.subscribe('/user/queue/chats', this.handleChatEvent.bind(this))
@@ -147,6 +147,7 @@ class WebSocketService {
                     lastMessageTime: msg.createdAt,
                     unreadCount: 1,
                     online: true,
+                    status: 'online',
                     type: 'DIRECT',
                     contactId: msg.senderId
                 }
@@ -189,6 +190,11 @@ class WebSocketService {
                     )
                 }
             }
+        } else if (data.type === 'ERROR') {
+            // 消息发送失败
+            const { chatId, error } = data.payload
+            console.error('Message send failed:', error, 'chatId:', chatId)
+            messageStore.markLastMessageFailed(chatId)
         } else if (data.type === 'TYPING') {
             const { userId, isTyping } = data.payload
             if (isTyping) {
@@ -202,11 +208,14 @@ class WebSocketService {
     handleUserStatus(message) {
         const data = JSON.parse(message.body)
         const contactStore = useContactStore()
+        const chatStore = useChatStore()
 
         if (data.type === 'USER_ONLINE') {
             contactStore.updateContactStatus(data.payload.userId, true)
+            chatStore.updateMemberOnlineStatus(data.payload.userId, true)
         } else if (data.type === 'USER_OFFLINE') {
             contactStore.updateContactStatus(data.payload.userId, false)
+            chatStore.updateMemberOnlineStatus(data.payload.userId, false)
         }
     }
 
@@ -237,6 +246,13 @@ class WebSocketService {
                 isOnline: contactData.isOnline,
                 lastSeen: contactData.lastSeen
             })
+        } else if (data.type === 'CONTACT_REMOVED') {
+            // 被对方删除好友
+            contactStore.removeContact(data.payload.contactId)
+        } else if (data.type === 'CHAT_DISABLED') {
+            // 聊天被禁用（联系人被删除）
+            const chatStore = useChatStore()
+            chatStore.handleChatDisabled(data.payload.chatId)
         }
     }
 
@@ -249,6 +265,7 @@ class WebSocketService {
         if (data.type === 'CHAT_CREATED') {
             // New chat created - add to chat list and subscribe
             const chatData = data.payload
+            const memberOnline = chatData.members?.find(m => m.id !== chatData.createdBy)?.isOnline || false
             const newChat = {
                 id: chatData.id,
                 contactId: chatData.members?.find(m => m.id !== chatData.createdBy)?.id,
@@ -257,7 +274,8 @@ class WebSocketService {
                 lastMessage: chatData.lastMessage?.content || '',
                 lastMessageTime: chatData.lastMessageAt || new Date(),
                 unreadCount: 0,
-                online: chatData.members?.find(m => m.id !== chatData.createdBy)?.isOnline || false,
+                online: memberOnline,
+                status: memberOnline ? 'online' : 'offline',
                 type: chatData.type === 'direct' ? 'DIRECT' : 'GROUP',
                 members: chatData.members
             }

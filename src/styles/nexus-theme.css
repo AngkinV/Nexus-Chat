@@ -365,3 +365,101 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+/* Add Contact Dialog Styles */
+.add-contact-dialog .el-dialog {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.add-contact-dialog .el-dialog__header {
+    padding: 16px;
+    padding-right: 48px;
+}
+
+.add-contact-dialog .el-dialog__headerbtn {
+    width: 28px;
+    height: 28px;
+    top: 12px;
+    right: 12px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+    border: none;
+    box-shadow: 0 4px 12px -2px rgba(14, 165, 233, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-contact-dialog .el-dialog__headerbtn:hover {
+    transform: translateY(-2px) rotate(90deg);
+    box-shadow: 0 6px 16px -2px rgba(14, 165, 233, 0.5);
+}
+
+.add-contact-dialog .el-dialog__headerbtn:active {
+    transform: translateY(0) rotate(90deg) scale(0.92);
+    box-shadow: 0 2px 8px -1px rgba(14, 165, 233, 0.4);
+}
+
+.add-contact-dialog .el-dialog__headerbtn .el-dialog__close {
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    position: static;
+    transform: none;
+}
+
+.add-contact-dialog .el-dialog__body {
+    padding: 16px;
+    overflow-x: hidden;
+}
+
+/* Create Group Dialog Styles */
+.create-group-dialog .el-dialog {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.create-group-dialog .el-dialog__header {
+    padding: 16px;
+    padding-right: 48px;
+}
+
+.create-group-dialog .el-dialog__headerbtn {
+    width: 28px;
+    height: 28px;
+    top: 12px;
+    right: 12px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+    border: none;
+    box-shadow: 0 4px 12px -2px rgba(14, 165, 233, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.create-group-dialog .el-dialog__headerbtn:hover {
+    transform: translateY(-2px) rotate(90deg);
+    box-shadow: 0 6px 16px -2px rgba(14, 165, 233, 0.5);
+}
+
+.create-group-dialog .el-dialog__headerbtn:active {
+    transform: translateY(0) rotate(90deg) scale(0.92);
+    box-shadow: 0 2px 8px -1px rgba(14, 165, 233, 0.4);
+}
+
+.create-group-dialog .el-dialog__headerbtn .el-dialog__close {
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    position: static;
+    transform: none;
+}
+
+.create-group-dialog .el-dialog__body {
+    padding: 16px;
+    overflow-x: hidden;
+}

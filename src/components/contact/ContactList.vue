@@ -33,10 +33,6 @@
         <el-icon :size="48"><User /></el-icon>
       </div>
       <p class="empty-text">{{ $t('contact.noContacts') }}</p>
-      <el-button type="primary" @click="$emit('add')">
-        <el-icon><Plus /></el-icon>
-        {{ $t('contact.addContact') }}
-      </el-button>
     </div>
 
     <template v-else>
@@ -103,7 +99,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { User, Plus, ChatDotRound, Delete, Bell, Check, Close } from '@element-plus/icons-vue'
+import { User, ChatDotRound, Delete, Bell, Check, Close } from '@element-plus/icons-vue'
 import { useContactStore } from '@/stores/contact'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
@@ -122,7 +118,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['select', 'add'])
+const emit = defineEmits(['select'])
 
 const contactStore = useContactStore()
 const userStore = useUserStore()

@@ -80,6 +80,20 @@ export const useMessageStore = defineStore('message', () => {
         return typingUsers.value[chatId] || []
     }
 
+    // Mark the last temporary message as failed (for send error handling)
+    function markLastMessageFailed(chatId) {
+        if (!messages.value[chatId]) return
+
+        // Find the last temporary message (id starts with 'temp-')
+        for (let i = messages.value[chatId].length - 1; i >= 0; i--) {
+            const msg = messages.value[chatId][i]
+            if (String(msg.id).startsWith('temp-')) {
+                msg.failed = true
+                break
+            }
+        }
+    }
+
     return {
         messages,
         getMessages,
@@ -88,6 +102,7 @@ export const useMessageStore = defineStore('message', () => {
         replaceTemporaryMessage,
         prependMessages,
         markMessageAsRead,
+        markLastMessageFailed,
         addTypingUser,
         removeTypingUser,
         getTypingUsers

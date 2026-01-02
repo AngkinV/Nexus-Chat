@@ -2,7 +2,7 @@
   <el-dialog
     v-model="dialogVisible"
     :title="$t('contact.addContact')"
-    width="450px"
+    width="356px"
     class="add-contact-dialog"
     :before-close="handleClose"
     :close-on-click-modal="false"
@@ -349,14 +349,11 @@ const addContactById = async () => {
 </script>
 
 <style scoped>
-.add-contact-dialog :deep(.el-dialog__body) {
-  padding: 20px 24px;
-}
-
 .add-contact-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+  overflow-x: hidden;
 }
 
 .search-section {
@@ -543,8 +540,8 @@ const addContactById = async () => {
 
 .recommended-list {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  overflow-x: auto;
   padding: 5px 0;
 }
 
@@ -553,12 +550,14 @@ const addContactById = async () => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 15px 20px;
+  padding: 12px 15px;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
-  min-width: 100px;
+  min-width: 80px;
+  flex: 1;
+  max-width: calc(33.33% - 7px);
   position: relative;
 }
 
@@ -596,5 +595,45 @@ const addContactById = async () => {
   font-size: 14px;
   opacity: 0;
   transition: opacity 0.2s;
+}
+</style>
+
+<style>
+/* Global styles for dialog (not scoped because el-dialog is teleported) */
+.add-contact-dialog .el-dialog {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.add-contact-dialog .el-dialog__headerbtn {
+  width: 28px;
+  height: 28px;
+  top: 12px;
+  right: 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+  border: none;
+  box-shadow: 0 4px 12px -2px rgba(14, 165, 233, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-contact-dialog .el-dialog__headerbtn:hover {
+  transform: translateY(-2px) rotate(90deg);
+  box-shadow: 0 6px 16px -2px rgba(14, 165, 233, 0.5);
+}
+
+.add-contact-dialog .el-dialog__headerbtn .el-dialog__close {
+  color: white;
+  font-size: 14px;
+  position: static;
+  transform: none;
+}
+
+.add-contact-dialog .el-dialog__body {
+  padding: 16px;
+  overflow-x: hidden;
 }
 </style>

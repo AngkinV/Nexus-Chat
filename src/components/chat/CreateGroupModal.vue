@@ -2,7 +2,7 @@
   <el-dialog
     v-model="dialogVisible"
     :title="currentStep === 1 ? $t('group.createGroup') : $t('group.addMembers')"
-    width="450px"
+    width="356px"
     class="create-group-dialog"
     :before-close="handleClose"
     :close-on-click-modal="false"
@@ -299,7 +299,7 @@ const createGroup = async () => {
 .group-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .avatar-upload-section {
@@ -311,18 +311,20 @@ const createGroup = async () => {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   overflow: hidden;
   position: relative;
-  transition: transform 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 24px -4px rgba(14, 165, 233, 0.4);
 }
 
 .avatar-wrapper:hover {
-  transform: scale(1.05);
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 12px 28px -4px rgba(14, 165, 233, 0.5);
 }
 
 .avatar-wrapper:hover .avatar-hover-overlay {
@@ -428,11 +430,11 @@ const createGroup = async () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #e3f2fd;
+  background: rgba(14, 165, 233, 0.1);
   border-radius: 20px;
   padding: 4px 10px 4px 4px;
   font-size: 13px;
-  color: #1976d2;
+  color: #0ea5e9;
 }
 
 .remove-icon {
@@ -477,7 +479,7 @@ const createGroup = async () => {
 }
 
 .user-item.selected {
-  background: #e3f2fd;
+  background: rgba(14, 165, 233, 0.1);
 }
 
 .user-info {
@@ -509,8 +511,8 @@ const createGroup = async () => {
 }
 
 .check-box.checked {
-  background: #3390ec;
-  border-color: #3390ec;
+  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+  border-color: #0ea5e9;
   color: white;
 }
 
