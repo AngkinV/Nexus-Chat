@@ -29,7 +29,16 @@
         "usernameExists": "Username already exists",
         "passwordMismatch": "Passwords do not match",
         "invalidEmail": "Please enter a valid email address",
-        "registerSuccess": "Registration successful! Please login."
+        "registerSuccess": "Registration successful! Please login.",
+        "verificationCode": "Verification Code",
+        "sendCode": "Send Code",
+        "resendCode": "Resend",
+        "resendIn": "Resend in {seconds}s",
+        "codeSent": "Verification code sent to your email",
+        "codeSendFailed": "Failed to send verification code",
+        "codeRequired": "Please enter verification code",
+        "codeInvalid": "Invalid or expired verification code",
+        "enterCode": "Enter 6-digit code"
     },
     "chat": {
         "newChat": "New Chat",

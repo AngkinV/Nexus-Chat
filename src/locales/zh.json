@@ -29,7 +29,16 @@
         "usernameExists": "用户名已被使用",
         "passwordMismatch": "两次密码不一致",
         "invalidEmail": "请输入有效的邮箱地址",
-        "registerSuccess": "注册成功！请登录。"
+        "registerSuccess": "注册成功！请登录。",
+        "verificationCode": "验证码",
+        "sendCode": "发送验证码",
+        "resendCode": "重新发送",
+        "resendIn": "{seconds}秒后重发",
+        "codeSent": "验证码已发送到您的邮箱",
+        "codeSendFailed": "验证码发送失败",
+        "codeRequired": "请输入验证码",
+        "codeInvalid": "验证码无效或已过期",
+        "enterCode": "请输入6位验证码"
     },
     "chat": {
         "newChat": "新建对话",

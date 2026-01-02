@@ -68,15 +68,39 @@
               <el-icon><User /></el-icon>
             </template>
           </el-input>
-          
+
+          <div class="email-code-row">
+            <el-input
+              v-model="registerForm.email"
+              :placeholder="$t('auth.email')"
+              size="large"
+              class="custom-input email-input"
+            >
+              <template #prefix>
+                <el-icon><Message /></el-icon>
+              </template>
+            </el-input>
+            <el-button
+              type="primary"
+              size="large"
+              class="send-code-btn"
+              :loading="sendingCode"
+              :disabled="!canSendCode"
+              @click="handleSendCode"
+            >
+              {{ countdown > 0 ? `${countdown}s` : $t('auth.sendCode') }}
+            </el-button>
+          </div>
+
           <el-input
-            v-model="registerForm.email"
-            :placeholder="$t('auth.email')"
+            v-model="registerForm.verificationCode"
+            :placeholder="$t('auth.enterCode')"
             size="large"
             class="custom-input mt-3"
+            maxlength="6"
           >
             <template #prefix>
-              <el-icon><Message /></el-icon>
+              <el-icon><Key /></el-icon>
             </template>
           </el-input>
 
@@ -152,11 +176,12 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
-import { Camera, User, Lock, Message, Iphone, Postcard } from '@element-plus/icons-vue'
+import { authAPI } from '@/services/api'
+import { Camera, User, Lock, Message, Iphone, Postcard, Key } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const { t } = useI18n()
@@ -165,8 +190,11 @@ const userStore = useUserStore()
 
 const isLoginMode = ref(true)
 const loading = ref(false)
+const sendingCode = ref(false)
 const avatarPreview = ref(null)
 const fileInput = ref(null)
+const countdown = ref(0)
+let countdownTimer = null
 
 const loginForm = reactive({
   usernameOrEmail: '',
@@ -179,7 +207,8 @@ const registerForm = reactive({
   nickname: '',
   phone: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  verificationCode: ''
 })
 
 const isLoginValid = computed(() => {
@@ -187,11 +216,17 @@ const isLoginValid = computed(() => {
 })
 
 const isRegisterValid = computed(() => {
-  return registerForm.username && 
-         registerForm.email && 
-         registerForm.nickname && 
-         registerForm.password && 
-         registerForm.confirmPassword
+  return registerForm.username &&
+         registerForm.email &&
+         registerForm.nickname &&
+         registerForm.password &&
+         registerForm.confirmPassword &&
+         registerForm.verificationCode
+})
+
+const canSendCode = computed(() => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(registerForm.email) && countdown.value === 0 && !sendingCode.value
 })
 
 const toggleMode = () => {
@@ -201,6 +236,11 @@ const toggleMode = () => {
   loginForm.password = ''
   Object.keys(registerForm).forEach(key => registerForm[key] = '')
   avatarPreview.value = null
+  countdown.value = 0
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
 }
 
 const triggerFileInput = () => {
@@ -222,6 +262,38 @@ const handleFileChange = (event) => {
   }
 }
 
+const startCountdown = () => {
+  countdown.value = 60
+  countdownTimer = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(countdownTimer)
+      countdownTimer = null
+    }
+  }, 1000)
+}
+
+const handleSendCode = async () => {
+  if (!canSendCode.value) return
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(registerForm.email)) {
+    ElMessage.error(t('auth.invalidEmail'))
+    return
+  }
+
+  sendingCode.value = true
+  try {
+    await authAPI.sendVerificationCode(registerForm.email, 'REGISTER')
+    ElMessage.success(t('auth.codeSent'))
+    startCountdown()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || t('auth.codeSendFailed'))
+  } finally {
+    sendingCode.value = false
+  }
+}
+
 const handleLogin = async () => {
   if (!isLoginValid.value) return
 
@@ -238,7 +310,7 @@ const handleLogin = async () => {
 
 const handleRegister = async () => {
   if (!isRegisterValid.value) return
-  
+
   if (registerForm.password !== registerForm.confirmPassword) {
     ElMessage.error(t('auth.passwordMismatch'))
     return
@@ -251,6 +323,11 @@ const handleRegister = async () => {
     return
   }
 
+  if (!registerForm.verificationCode) {
+    ElMessage.error(t('auth.codeRequired'))
+    return
+  }
+
   loading.value = true
   try {
     await userStore.register({
@@ -258,8 +335,9 @@ const handleRegister = async () => {
       email: registerForm.email,
       nickname: registerForm.nickname,
       password: registerForm.password,
-      phone: registerForm.phone || null, // Optional
-      avatarUrl: avatarPreview.value
+      phone: registerForm.phone || null,
+      avatarUrl: avatarPreview.value,
+      verificationCode: registerForm.verificationCode
     })
     router.push('/main')
     ElMessage.success(t('auth.registerSuccess') || 'Registration successful')
@@ -269,6 +347,12 @@ const handleRegister = async () => {
     loading.value = false
   }
 }
+
+onUnmounted(() => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+  }
+})
 </script>
 
 <style scoped>
@@ -382,6 +466,23 @@ p {
 
 .mt-3 {
   margin-top: 12px;
+}
+
+.email-code-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.email-input {
+  flex: 1;
+}
+
+.send-code-btn {
+  flex-shrink: 0;
+  min-width: 100px;
+  border-radius: 12px;
+  font-size: 13px;
 }
 
 .custom-input :deep(.el-input__wrapper) {

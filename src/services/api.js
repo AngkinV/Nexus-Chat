@@ -20,14 +20,20 @@ apiClient.interceptors.request.use(config => {
 
 // Auth API
 export const authAPI = {
-    register: ({ email, username, password, nickname, phone, avatarUrl }) =>
-        apiClient.post('/auth/register', { email, username, password, nickname, phone, avatarUrl }),
+    register: ({ email, username, password, nickname, phone, avatarUrl, verificationCode }) =>
+        apiClient.post('/auth/register', { email, username, password, nickname, phone, avatarUrl, verificationCode }),
 
     login: (usernameOrEmail, password) =>
         apiClient.post('/auth/login', { usernameOrEmail, password }),
 
     logout: (userId) =>
-        apiClient.post('/auth/logout', null, { params: { userId } })
+        apiClient.post('/auth/logout', null, { params: { userId } }),
+
+    sendVerificationCode: (email, type = 'REGISTER') =>
+        apiClient.post('/auth/send-code', { email, type }),
+
+    verifyCode: (email, code, type = 'REGISTER') =>
+        apiClient.post('/auth/verify-code', { email, code, type })
 }
 
 // User API
