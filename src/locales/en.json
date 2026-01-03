@@ -56,7 +56,15 @@
         "lastSeen": "Last seen",
         "typing": "typing...",
         "groupName": "Group Name",
-        "addMembers": "Add Members"
+        "addMembers": "Add Members",
+        "activeNow": "Active now",
+        "audioCall": "Audio Call",
+        "videoCall": "Video Call",
+        "moreInfo": "More Info",
+        "welcomeTo": "Welcome to",
+        "welcomeSubtitle": "Pick a conversation from the sidebar to start chatting, or create a new one to connect with friends.",
+        "startNewChat": "Start New Chat",
+        "endToEndEncrypted": "End-to-End Encrypted"
     },
     "settings": {
         "settings": "Settings",

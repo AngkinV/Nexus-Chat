@@ -56,7 +56,15 @@
         "lastSeen": "最后在线",
         "typing": "正在输入...",
         "groupName": "群组名称",
-        "addMembers": "添加成员"
+        "addMembers": "添加成员",
+        "activeNow": "当前在线",
+        "audioCall": "语音通话",
+        "videoCall": "视频通话",
+        "moreInfo": "更多信息",
+        "welcomeTo": "欢迎使用",
+        "welcomeSubtitle": "从侧边栏选择对话开始聊天，或创建新对话与朋友联系。",
+        "startNewChat": "开始新对话",
+        "endToEndEncrypted": "端到端加密"
     },
     "settings": {
         "settings": "设置",

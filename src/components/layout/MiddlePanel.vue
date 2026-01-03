@@ -11,20 +11,20 @@
           <div class="chat-meta">
             <div class="name-row">
               <span class="chat-name">{{ chatStore.activeChat.name }}</span>
-              <span v-if="chatStore.activeChat.status === 'online'" class="online-badge">ONLINE</span>
+              <span v-if="chatStore.activeChat.status === 'online'" class="online-badge">{{ $t('chat.online').toUpperCase() }}</span>
             </div>
-            <span class="chat-status">{{ chatStore.activeChat.status === 'online' ? 'Active now' : $t('chat.' + (chatStore.activeChat.status || 'offline')) }}</span>
+            <span class="chat-status">{{ chatStore.activeChat.status === 'online' ? $t('chat.activeNow') : $t('chat.' + (chatStore.activeChat.status || 'offline')) }}</span>
           </div>
         </div>
         <div class="header-actions">
-          <button class="action-btn" title="Audio Call">
+          <button class="action-btn" :title="$t('chat.audioCall')">
             <el-icon :size="22"><Phone /></el-icon>
           </button>
-          <button class="action-btn" title="Video Call">
+          <button class="action-btn" :title="$t('chat.videoCall')">
             <el-icon :size="22"><VideoCamera /></el-icon>
           </button>
           <div class="action-divider"></div>
-          <button class="action-btn" @click="toggleRightPanel" title="More Info">
+          <button class="action-btn" @click="toggleRightPanel" :title="$t('chat.moreInfo')">
             <el-icon :size="22"><MoreFilled /></el-icon>
           </button>
         </div>
@@ -56,24 +56,23 @@
         </div>
 
         <h2 class="welcome-title">
-          Welcome to <span class="text-gradient">Nexus</span>
+          {{ $t('chat.welcomeTo') }} <span class="text-gradient">Nexus</span>
         </h2>
 
         <p class="welcome-subtitle">
-          Pick a conversation from the sidebar to start chatting,<br/>
-          or create a new one to connect with friends.
+          {{ $t('chat.welcomeSubtitle') }}
         </p>
 
         <button class="start-chat-btn" @click="openNewChat">
           <el-icon><ChatLineSquare /></el-icon>
-          <span>Start New Chat</span>
+          <span>{{ $t('chat.startNewChat') }}</span>
         </button>
       </div>
 
       <!-- Bottom encrypted label -->
       <div class="encrypted-label">
         <el-icon><Lock /></el-icon>
-        <span>End-to-End Encrypted</span>
+        <span>{{ $t('chat.endToEndEncrypted') }}</span>
       </div>
     </div>
   </div>

@@ -55,7 +55,7 @@
         <span v-if="chatStore.totalUnreadCount > 0" class="tab-badge-new">{{ chatStore.totalUnreadCount }}</span>
       </button>
       <button
-        class="tab-btn"
+        class="tab-btn contacts-tab"
         :class="{ active: activeTab === 'contacts' }"
         @click="activeTab = 'contacts'"
       >

@@ -25,11 +25,9 @@ const leftPanelRef = ref(null)
 
 // Handle open new chat from MiddlePanel
 const handleOpenNewChat = () => {
-  // Trigger the create group modal in LeftPanel
-  // This is a simple approach - you could also use provide/inject or event bus
+  // Switch to contacts tab in LeftPanel
   if (leftPanelRef.value) {
-    // LeftPanel already has its own openNewChat method
-    leftPanelRef.value.$el.querySelector('.icon-btn-new')?.click()
+    leftPanelRef.value.$el.querySelector('.contacts-tab')?.click()
   }
 }
 
