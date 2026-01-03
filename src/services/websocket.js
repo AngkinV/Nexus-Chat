@@ -265,19 +265,24 @@ class WebSocketService {
         if (data.type === 'CHAT_CREATED') {
             // New chat created - add to chat list and subscribe
             const chatData = data.payload
+            const isGroup = chatData.type === 'group'
             const memberOnline = chatData.members?.find(m => m.id !== chatData.createdBy)?.isOnline || false
+
             const newChat = {
                 id: chatData.id,
-                contactId: chatData.members?.find(m => m.id !== chatData.createdBy)?.id,
+                contactId: isGroup ? null : chatData.members?.find(m => m.id !== chatData.createdBy)?.id,
                 name: chatData.name,
-                avatar: chatData.members?.[0]?.avatarUrl || '',
+                description: chatData.description || '',
+                avatar: chatData.avatar || chatData.members?.[0]?.avatarUrl || '',
+                isPrivate: chatData.isPrivate || false,
                 lastMessage: chatData.lastMessage?.content || '',
                 lastMessageTime: chatData.lastMessageAt || new Date(),
                 unreadCount: 0,
                 online: memberOnline,
                 status: memberOnline ? 'online' : 'offline',
-                type: chatData.type === 'direct' ? 'DIRECT' : 'GROUP',
-                members: chatData.members
+                type: isGroup ? 'GROUP' : 'DIRECT',
+                members: chatData.members,
+                memberCount: chatData.memberCount || chatData.members?.length || 1
             }
 
             // Add to chat list if not exists
@@ -292,6 +297,43 @@ class WebSocketService {
                 chatStore.markChatSubscribed(newChat.id)
                 console.log('Auto-subscribed to new chat:', newChat.id)
             }
+        } else if (data.type === 'GROUP_UPDATED') {
+            // Group info updated
+            const groupData = data.payload
+            chatStore.updateChat(groupData.id, {
+                name: groupData.name,
+                description: groupData.description,
+                avatar: groupData.avatar,
+                isPrivate: groupData.isPrivate
+            })
+        } else if (data.type === 'GROUP_MEMBER_JOINED') {
+            // New member joined group
+            const { groupId, member, memberCount } = data.payload
+            chatStore.addGroupMember(groupId, member)
+            // Update memberCount from server if provided
+            if (memberCount !== undefined) {
+                chatStore.updateChat(groupId, { memberCount })
+            }
+        } else if (data.type === 'GROUP_MEMBER_LEFT') {
+            // Member left group
+            const { groupId, memberId, memberCount } = data.payload
+            chatStore.removeGroupMember(groupId, memberId)
+            // Update memberCount from server if provided
+            if (memberCount !== undefined) {
+                chatStore.updateChat(groupId, { memberCount })
+            }
+        } else if (data.type === 'GROUP_DELETED') {
+            // Group deleted
+            const { groupId } = data.payload
+            chatStore.removeChat(groupId)
+        } else if (data.type === 'GROUP_ADMIN_CHANGED') {
+            // Member admin status changed
+            const { groupId, memberId, isAdmin } = data.payload
+            chatStore.updateGroupMemberRole(groupId, memberId, isAdmin ? 'admin' : 'member', isAdmin)
+        } else if (data.type === 'GROUP_OWNERSHIP_TRANSFERRED') {
+            // Group ownership transferred
+            const { groupId, oldOwnerId, newOwnerId } = data.payload
+            chatStore.transferGroupOwnership(groupId, oldOwnerId, newOwnerId)
         }
     }
 

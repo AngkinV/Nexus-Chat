@@ -10,6 +10,52 @@ export const useChatStore = defineStore('chat', () => {
 
     const messages = ref([])
 
+    // Muted and Pinned chats (persisted in localStorage)
+    const mutedChats = ref(new Set(JSON.parse(localStorage.getItem('mutedChats') || '[]')))
+    const pinnedChats = ref(new Set(JSON.parse(localStorage.getItem('pinnedChats') || '[]')))
+
+    // Save muted chats to localStorage
+    const saveMutedChats = () => {
+        localStorage.setItem('mutedChats', JSON.stringify([...mutedChats.value]))
+    }
+
+    // Save pinned chats to localStorage
+    const savePinnedChats = () => {
+        localStorage.setItem('pinnedChats', JSON.stringify([...pinnedChats.value]))
+    }
+
+    // Toggle mute for a chat
+    const toggleMuteChat = (chatId) => {
+        if (mutedChats.value.has(chatId)) {
+            mutedChats.value.delete(chatId)
+        } else {
+            mutedChats.value.add(chatId)
+        }
+        saveMutedChats()
+        return mutedChats.value.has(chatId)
+    }
+
+    // Check if chat is muted
+    const isChatMuted = (chatId) => {
+        return mutedChats.value.has(chatId)
+    }
+
+    // Toggle pin for a chat
+    const togglePinChat = (chatId) => {
+        if (pinnedChats.value.has(chatId)) {
+            pinnedChats.value.delete(chatId)
+        } else {
+            pinnedChats.value.add(chatId)
+        }
+        savePinnedChats()
+        return pinnedChats.value.has(chatId)
+    }
+
+    // Check if chat is pinned
+    const isChatPinned = (chatId) => {
+        return pinnedChats.value.has(chatId)
+    }
+
     // Computed: Get all group chats
     const groupChats = computed(() => {
         return chats.value.filter(chat => chat.type === 'GROUP')
@@ -40,6 +86,10 @@ export const useChatStore = defineStore('chat', () => {
             if (updates.lastMessage) {
                 const chat = chats.value.splice(chatIndex, 1)[0]
                 chats.value.unshift(chat)
+            }
+            // Update activeChat if it's the same chat
+            if (activeChat.value?.id === chatId) {
+                activeChat.value = { ...chats.value.find(c => c.id === chatId) }
             }
         }
     }
@@ -288,12 +338,102 @@ export const useChatStore = defineStore('chat', () => {
         }
     }
 
+    // Add member to group
+    const addGroupMember = (groupId, member) => {
+        const chatIndex = chats.value.findIndex(c => c.id === groupId)
+        if (chatIndex !== -1) {
+            if (!chats.value[chatIndex].members) {
+                chats.value[chatIndex].members = []
+            }
+            // Check if member already exists
+            const exists = chats.value[chatIndex].members.some(m => m.id === member.id)
+            if (!exists) {
+                chats.value[chatIndex].members.push(member)
+                chats.value[chatIndex].memberCount = (chats.value[chatIndex].memberCount || 0) + 1
+            }
+            // Update activeChat if same
+            if (activeChat.value?.id === groupId) {
+                activeChat.value = { ...chats.value[chatIndex] }
+            }
+        }
+    }
+
+    // Remove member from group
+    const removeGroupMember = (groupId, memberId) => {
+        const chatIndex = chats.value.findIndex(c => c.id === groupId)
+        if (chatIndex !== -1 && chats.value[chatIndex].members) {
+            const memberIndex = chats.value[chatIndex].members.findIndex(m => m.id === memberId)
+            if (memberIndex !== -1) {
+                chats.value[chatIndex].members.splice(memberIndex, 1)
+                chats.value[chatIndex].memberCount = Math.max((chats.value[chatIndex].memberCount || 1) - 1, 0)
+            }
+            // Update activeChat if same
+            if (activeChat.value?.id === groupId) {
+                activeChat.value = { ...chats.value[chatIndex] }
+            }
+        }
+    }
+
+    // Remove chat (alias for deleteChat, used by WebSocket)
+    const removeChat = (chatId) => {
+        deleteChat(chatId)
+    }
+
+    // Update group member role
+    const updateGroupMemberRole = (groupId, memberId, role, isAdmin) => {
+        const chatIndex = chats.value.findIndex(c => c.id === groupId)
+        if (chatIndex !== -1 && chats.value[chatIndex].members) {
+            const member = chats.value[chatIndex].members.find(m => m.id === memberId)
+            if (member) {
+                member.role = role
+                member.isAdmin = isAdmin
+            }
+            // Update activeChat if same
+            if (activeChat.value?.id === groupId) {
+                activeChat.value = { ...chats.value[chatIndex] }
+            }
+        }
+    }
+
+    // Transfer group ownership
+    const transferGroupOwnership = (groupId, oldOwnerId, newOwnerId) => {
+        const chatIndex = chats.value.findIndex(c => c.id === groupId)
+        if (chatIndex !== -1 && chats.value[chatIndex].members) {
+            // Update old owner to admin
+            const oldOwner = chats.value[chatIndex].members.find(m => m.id === oldOwnerId)
+            if (oldOwner) {
+                oldOwner.role = 'admin'
+                oldOwner.isAdmin = true
+            }
+            // Update new owner
+            const newOwner = chats.value[chatIndex].members.find(m => m.id === newOwnerId)
+            if (newOwner) {
+                newOwner.role = 'owner'
+                newOwner.isAdmin = true
+            }
+            // Update activeChat if same
+            if (activeChat.value?.id === groupId) {
+                activeChat.value = { ...chats.value[chatIndex] }
+            }
+        }
+    }
+
+    // Reset store - clear all data (used on logout)
+    const resetStore = () => {
+        activeChat.value = null
+        chats.value = []
+        messages.value = []
+        subscribedChatIds.value = new Set()
+    }
+
     return {
         activeChat,
         chats,
         messages,
         isLoading,
         subscribedChatIds,
+        mutedChats,
+        pinnedChats,
         groupChats,
         directChats,
         totalUnreadCount,
@@ -307,12 +447,22 @@ export const useChatStore = defineStore('chat', () => {
         updateGroupInfo,
         leaveGroup,
         deleteChat,
+        removeChat,
         handleChatDisabled,
         getMessagesForChat,
         updateChat,
         incrementUnreadCount,
         markChatSubscribed,
         isChatSubscribed,
-        updateMemberOnlineStatus
+        updateMemberOnlineStatus,
+        addGroupMember,
+        removeGroupMember,
+        updateGroupMemberRole,
+        transferGroupOwnership,
+        toggleMuteChat,
+        isChatMuted,
+        togglePinChat,
+        isChatPinned,
+        resetStore
     }
 })

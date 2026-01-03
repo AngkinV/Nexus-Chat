@@ -94,8 +94,8 @@ export const chatAPI = {
     createDirectChat: (userId, contactId) =>
         apiClient.post('/chats/direct', null, { params: { userId, contactId } }),
 
-    createGroupChat: (userId, name, memberIds) =>
-        apiClient.post('/chats/group', { name, memberIds }, { params: { userId } }),
+    createGroupChat: (userId, { name, description, avatar, isPrivate, memberIds }) =>
+        apiClient.post('/chats/group', { name, description, avatar, isPrivate, memberIds }, { params: { userId } }),
 
     getUserChats: (userId) => apiClient.get(`/chats/user/${userId}`),
 
@@ -158,6 +158,45 @@ export const contactAPI = {
     // 拒绝好友申请
     rejectRequest: (requestId, userId) =>
         apiClient.post(`/contacts/requests/${requestId}/reject`, null, { params: { userId } })
+}
+
+// Group API
+export const groupAPI = {
+    // 获取群组信息
+    getGroupById: (groupId) =>
+        apiClient.get(`/groups/${groupId}`),
+
+    // 获取群组成员列表（包含角色信息）
+    getGroupMembers: (groupId) =>
+        apiClient.get(`/groups/${groupId}/members`),
+
+    // 退出群聊
+    leaveGroup: (groupId, userId) =>
+        apiClient.post(`/groups/${groupId}/leave`, null, { params: { userId } }),
+
+    // 移除成员（管理员权限）
+    removeMember: (groupId, memberId, userId) =>
+        apiClient.delete(`/groups/${groupId}/members/${memberId}`, { params: { userId } }),
+
+    // 添加成员
+    addMembers: (groupId, userId, memberIds) =>
+        apiClient.post(`/groups/${groupId}/members`, { userIds: memberIds }, { params: { userId } }),
+
+    // 设置/取消管理员（群主权限）
+    setAdmin: (groupId, memberId, userId, isAdmin) =>
+        apiClient.put(`/groups/${groupId}/members/${memberId}/admin`, null, { params: { userId, isAdmin } }),
+
+    // 转让群主
+    transferOwnership: (groupId, userId, newOwnerId) =>
+        apiClient.post(`/groups/${groupId}/transfer`, null, { params: { userId, newOwnerId } }),
+
+    // 解散群聊（群主权限）
+    deleteGroup: (groupId, userId) =>
+        apiClient.delete(`/groups/${groupId}`, { params: { userId } }),
+
+    // 更新群组信息
+    updateGroup: (groupId, userId, data) =>
+        apiClient.put(`/groups/${groupId}`, data, { params: { userId } })
 }
 
 // File API

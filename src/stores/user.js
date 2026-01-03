@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authAPI, userAPI } from '@/services/api'
+import { useChatStore } from '@/stores/chat'
 
 export const useUserStore = defineStore('user', () => {
     const currentUser = ref(null)
@@ -98,10 +99,15 @@ export const useUserStore = defineStore('user', () => {
         } catch (error) {
             console.error('Logout API error:', error)
         } finally {
+            // Clear user data
             currentUser.value = null
             token.value = null
             localStorage.removeItem('user')
             localStorage.removeItem('token')
+
+            // Clear chat store data
+            const chatStore = useChatStore()
+            chatStore.resetStore()
         }
     }
 

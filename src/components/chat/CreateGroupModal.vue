@@ -90,7 +90,20 @@
       <div class="available-users">
         <div class="section-title">{{ $t('group.availableMembers') }}</div>
         <el-scrollbar max-height="300px">
+          <!-- Empty state when no contacts -->
+          <div v-if="availableUsers.length === 0" class="empty-contacts">
+            <el-icon class="empty-icon"><User /></el-icon>
+            <p>{{ $t('group.noContacts') }}</p>
+            <span>{{ $t('group.addContactsFirst') }}</span>
+          </div>
+          <!-- No search results -->
+          <div v-else-if="filteredUsers.length === 0" class="empty-contacts">
+            <el-icon class="empty-icon"><Search /></el-icon>
+            <p>{{ $t('group.noSearchResults') }}</p>
+          </div>
+          <!-- User list -->
           <div
+            v-else
             v-for="user in filteredUsers"
             :key="user.id"
             class="user-item"
@@ -144,9 +157,11 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Camera, Check, Search, Lock, Close } from '@element-plus/icons-vue'
+import { Camera, Check, Search, Lock, Close, User } from '@element-plus/icons-vue'
 import { useChatStore } from '@/stores/chat'
 import { useContactStore } from '@/stores/contact'
+import { useUserStore } from '@/stores/user'
+import { chatAPI } from '@/services/api'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
@@ -160,6 +175,7 @@ const emit = defineEmits(['update:visible', 'created'])
 
 const chatStore = useChatStore()
 const contactStore = useContactStore()
+const userStore = useUserStore()
 
 const currentStep = ref(1)
 const groupName = ref('')
@@ -171,21 +187,21 @@ const searchQuery = ref('')
 const isCreating = ref(false)
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
-// Mock available users - in real app, this would come from API/store
-const availableUsers = ref([
-  { id: 101, nickname: 'Alice', username: 'alice', avatar: '', isOnline: true },
-  { id: 102, nickname: 'Bob', username: 'bob', avatar: '', isOnline: true },
-  { id: 103, nickname: 'Charlie', username: 'charlie', avatar: '', isOnline: false },
-  { id: 104, nickname: 'David', username: 'david', avatar: '', isOnline: true },
-  { id: 105, nickname: 'Eve', username: 'eve', avatar: '', isOnline: false },
-  { id: 106, nickname: 'Frank', username: 'frank', avatar: '', isOnline: true },
-  { id: 107, nickname: 'Grace', username: 'grace', avatar: '', isOnline: false }
-])
+// Use real contacts from contactStore
+const availableUsers = computed(() => {
+  return contactStore.contacts.map(contact => ({
+    id: contact.id,
+    nickname: contact.nickname || contact.username,
+    username: contact.username,
+    avatar: contact.avatar || contact.avatarUrl || '',
+    isOnline: contact.isOnline || false
+  }))
+})
 
 const filteredUsers = computed(() => {
   if (!searchQuery.value) return availableUsers.value
   const query = searchQuery.value.toLowerCase()
-  return availableUsers.value.filter(user => 
+  return availableUsers.value.filter(user =>
     user.nickname.toLowerCase().includes(query) ||
     user.username.toLowerCase().includes(query)
   )
@@ -259,31 +275,47 @@ const createGroup = async () => {
   }
 
   isCreating.value = true
-  
+
   try {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const newGroup = {
-      id: Date.now(),
+    const userId = userStore.currentUser?.id
+    if (!userId) {
+      ElMessage.error(t('auth.pleaseLogin'))
+      return
+    }
+
+    // Call real API
+    const response = await chatAPI.createGroupChat(userId, {
       name: groupName.value,
       description: groupDescription.value,
-      avatar: groupAvatar.value || '',
+      avatar: groupAvatar.value || null,
+      isPrivate: isPrivate.value,
+      memberIds: selectedUsers.value
+    })
+
+    const newGroup = response.data
+
+    // Transform to frontend format and add to store
+    const groupForStore = {
+      id: newGroup.id,
+      name: newGroup.name,
+      description: newGroup.description,
+      avatar: newGroup.avatar || '',
       lastMessage: t('group.created'),
-      lastMessageTime: new Date(),
+      lastMessageTime: newGroup.createdAt,
       unreadCount: 0,
       online: true,
       type: 'GROUP',
-      isPrivate: isPrivate.value,
-      members: selectedUsers.value,
-      memberCount: selectedUsers.value.length + 1 // +1 for creator
+      isPrivate: newGroup.isPrivate,
+      members: newGroup.members || [],
+      memberCount: newGroup.memberCount || selectedUsers.value.length + 1
     }
-    
-    chatStore.chats.unshift(newGroup)
-    emit('created', newGroup)
+
+    chatStore.chats.unshift(groupForStore)
+    emit('created', groupForStore)
     ElMessage.success(t('group.createSuccess'))
     handleClose()
   } catch (error) {
+    console.error('Failed to create group:', error)
     ElMessage.error(t('group.createFailed'))
   } finally {
     isCreating.value = false
@@ -520,6 +552,35 @@ const createGroup = async () => {
   text-align: center;
   font-size: 13px;
   color: #666;
+}
+
+.empty-contacts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #999;
+  text-align: center;
+}
+
+.empty-contacts .empty-icon {
+  font-size: 48px;
+  color: #ddd;
+  margin-bottom: 12px;
+}
+
+.empty-contacts p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+}
+
+.empty-contacts span {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
 }
 
 .dialog-footer {

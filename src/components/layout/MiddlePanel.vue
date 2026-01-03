@@ -11,9 +11,17 @@
           <div class="chat-meta">
             <div class="name-row">
               <span class="chat-name">{{ chatStore.activeChat.name }}</span>
-              <span v-if="chatStore.activeChat.status === 'online'" class="online-badge">{{ $t('chat.online').toUpperCase() }}</span>
+              <span v-if="chatStore.activeChat.type !== 'group' && chatStore.activeChat.status === 'online'" class="online-badge">{{ $t('chat.online').toUpperCase() }}</span>
             </div>
-            <span class="chat-status">{{ chatStore.activeChat.status === 'online' ? $t('chat.activeNow') : $t('chat.' + (chatStore.activeChat.status || 'offline')) }}</span>
+            <span class="chat-status">
+              <template v-if="chatStore.activeChat.type === 'group'">
+                <el-icon class="member-icon"><User /></el-icon>
+                <span>{{ chatStore.activeChat.memberCount || 0 }} {{ $t('group.members') }}</span>
+              </template>
+              <template v-else>
+                {{ chatStore.activeChat.status === 'online' ? $t('chat.activeNow') : $t('chat.' + (chatStore.activeChat.status || 'offline')) }}
+              </template>
+            </span>
           </div>
         </div>
         <div class="header-actions">
@@ -85,7 +93,7 @@ import { useMessageStore } from '@/stores/message'
 import { useUserStore } from '@/stores/user'
 import { messageAPI } from '@/services/api'
 import websocket from '@/services/websocket'
-import { Phone, Search, MoreFilled, ChatLineSquare, Lock, VideoCamera } from '@element-plus/icons-vue'
+import { Phone, Search, MoreFilled, ChatLineSquare, Lock, VideoCamera, User } from '@element-plus/icons-vue'
 import MessageList from '@/components/chat/MessageList.vue'
 import MessageInput from '@/components/chat/MessageInput.vue'
 
@@ -284,6 +292,14 @@ const handleSendMessage = (content, type = 'TEXT') => {
   font-size: 13px;
   color: var(--tg-text-secondary);
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-status .member-icon {
+  font-size: 14px;
+  color: var(--tg-primary);
 }
 
 .header-actions {
