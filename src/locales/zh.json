@@ -65,7 +65,15 @@
         "welcomeTo": "欢迎使用",
         "welcomeSubtitle": "从侧边栏选择对话开始聊天，或创建新对话与朋友联系。",
         "startNewChat": "开始新对话",
-        "endToEndEncrypted": "端到端加密"
+        "endToEndEncrypted": "端到端加密",
+        "deleteChat": "删除对话",
+        "confirmDeleteChat": "确定要删除与 {name} 的对话吗？聊天记录将被清除。",
+        "deleteChatSuccess": "对话已删除",
+        "deleteChatFailed": "删除对话失败",
+        "pin": "置顶",
+        "unpin": "取消置顶",
+        "pinSuccess": "已置顶",
+        "unpinSuccess": "已取消置顶"
     },
     "settings": {
         "settings": "设置",

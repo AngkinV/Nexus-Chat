@@ -24,10 +24,10 @@
         <template v-if="availableContacts.length > 0">
           <div
             v-for="contact in filteredContacts"
-            :key="contact.id"
+            :key="contact.userId"
             class="contact-item"
-            :class="{ selected: selectedIds.has(contact.id) }"
-            @click="toggleSelect(contact.id)"
+            :class="{ selected: selectedIds.has(contact.userId) }"
+            @click="toggleSelect(contact.userId)"
           >
             <div class="contact-avatar">
               <el-avatar :size="40" :src="contact.avatarUrl || contact.avatar || defaultAvatar" />
@@ -38,7 +38,7 @@
               <span class="contact-username">@{{ contact.username }}</span>
             </div>
             <div class="check-box">
-              <span class="material-icons-round" v-if="selectedIds.has(contact.id)">check_circle</span>
+              <span class="material-icons-round" v-if="selectedIds.has(contact.userId)">check_circle</span>
               <span class="material-icons-round" v-else>radio_button_unchecked</span>
             </div>
           </div>
@@ -112,10 +112,10 @@ const contacts = ref([])
 const loading = ref(false)
 const submitting = ref(false)
 
-// Filter out existing members
+// Filter out existing members (use userId for comparison)
 const availableContacts = computed(() => {
   const existingSet = new Set(props.existingMemberIds)
-  return contacts.value.filter(c => !existingSet.has(c.id))
+  return contacts.value.filter(c => !existingSet.has(c.userId))
 })
 
 // Filter by search query
@@ -151,11 +151,11 @@ const loadContacts = async () => {
   }
 }
 
-const toggleSelect = (id) => {
-  if (selectedIds.value.has(id)) {
-    selectedIds.value.delete(id)
+const toggleSelect = (userId) => {
+  if (selectedIds.value.has(userId)) {
+    selectedIds.value.delete(userId)
   } else {
-    selectedIds.value.add(id)
+    selectedIds.value.add(userId)
   }
   // Force reactivity
   selectedIds.value = new Set(selectedIds.value)
@@ -171,11 +171,11 @@ const handleConfirm = async () => {
 
     await groupAPI.addMembers(props.groupId, userId, memberIds)
 
-    // Update local store
-    const addedMembers = contacts.value.filter(c => selectedIds.value.has(c.id))
+    // Update local store (use userId to find contacts)
+    const addedMembers = contacts.value.filter(c => selectedIds.value.has(c.userId))
     addedMembers.forEach(member => {
       chatStore.addGroupMember(props.groupId, {
-        id: member.id,
+        id: member.userId,
         nickname: member.nickname,
         avatarUrl: member.avatarUrl || member.avatar,
         isOnline: member.isOnline,
@@ -188,7 +188,8 @@ const handleConfirm = async () => {
     handleClose()
   } catch (error) {
     console.error('Failed to add members:', error)
-    ElMessage.error(t('group.addMembersFailed'))
+    const errorMessage = error.response?.data?.message || t('group.addMembersFailed')
+    ElMessage.error(errorMessage)
   } finally {
     submitting.value = false
   }

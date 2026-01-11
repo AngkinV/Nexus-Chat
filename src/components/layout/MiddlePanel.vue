@@ -148,7 +148,8 @@ watch(() => chatStore.activeChat, async (newChat, oldChat) => {
 
     // Subscribe to chat room for real-time messages
     if (!chatStore.isChatSubscribed(newChat.id)) {
-      websocket.subscribeToChatRoom(newChat.id)
+      const isGroup = newChat.type === 'GROUP'
+      websocket.subscribeToChatRoom(newChat.id, isGroup)
       chatStore.markChatSubscribed(newChat.id)
     }
   }

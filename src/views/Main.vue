@@ -69,9 +69,10 @@ const subscribeToAllChats = () => {
   console.log('Subscribing to all chats:', chatStore.chats.length)
   chatStore.chats.forEach(chat => {
     if (!chatStore.isChatSubscribed(chat.id)) {
-      websocket.subscribeToChatRoom(chat.id)
+      const isGroup = chat.type === 'GROUP'
+      websocket.subscribeToChatRoom(chat.id, isGroup)
       chatStore.markChatSubscribed(chat.id)
-      console.log('Subscribed to chat:', chat.id, chat.name)
+      console.log('Subscribed to chat:', chat.id, chat.name, isGroup ? '(group)' : '(direct)')
     }
   })
 }

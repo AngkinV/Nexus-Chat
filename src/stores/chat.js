@@ -74,6 +74,21 @@ export const useChatStore = defineStore('chat', () => {
     // Computed: Selected chat ID (for convenience)
     const selectedChatId = computed(() => activeChat.value?.id || null)
 
+    // Computed: Sorted chats (pinned first, then by last message time)
+    const sortedChats = computed(() => {
+        return [...chats.value].sort((a, b) => {
+            const aPinned = pinnedChats.value.has(a.id)
+            const bPinned = pinnedChats.value.has(b.id)
+
+            // Pinned chats come first
+            if (aPinned && !bPinned) return -1
+            if (!aPinned && bPinned) return 1
+
+            // Same pinned status, sort by last message time
+            return new Date(b.lastMessageTime || 0) - new Date(a.lastMessageTime || 0)
+        })
+    })
+
     // Update chat properties
     const updateChat = (chatId, updates) => {
         const chatIndex = chats.value.findIndex(c => c.id === chatId)
@@ -281,14 +296,29 @@ export const useChatStore = defineStore('chat', () => {
         }
     }
 
-    const deleteChat = (chatId) => {
+    const deleteChat = async (chatId, userId) => {
+        // Call API to delete chat on server
+        await chatAPI.deleteChat(chatId, userId)
+
+        // Remove from local chat list
         const chatIndex = chats.value.findIndex(c => c.id === chatId)
         if (chatIndex !== -1) {
             chats.value.splice(chatIndex, 1)
-            if (activeChat.value?.id === chatId) {
-                activeChat.value = null
-            }
         }
+
+        // Clear activeChat if it's the deleted one
+        if (activeChat.value?.id === chatId) {
+            activeChat.value = null
+        }
+
+        // Clear pinned and muted status
+        pinnedChats.value.delete(chatId)
+        mutedChats.value.delete(chatId)
+        savePinnedChats()
+        saveMutedChats()
+
+        // Remove from subscribed list
+        subscribedChatIds.value.delete(chatId)
     }
 
     // Handle chat disabled (contact removed)
@@ -438,6 +468,7 @@ export const useChatStore = defineStore('chat', () => {
         directChats,
         totalUnreadCount,
         selectedChatId,
+        sortedChats,
         fetchChats,
         setActiveChat,
         toggleActiveChat,

@@ -100,7 +100,10 @@ export const chatAPI = {
     getUserChats: (userId) => apiClient.get(`/chats/user/${userId}`),
 
     getChatById: (chatId, userId) =>
-        apiClient.get(`/chats/${chatId}`, { params: { userId } })
+        apiClient.get(`/chats/${chatId}`, { params: { userId } }),
+
+    deleteChat: (chatId, userId) =>
+        apiClient.delete(`/chats/${chatId}`, { params: { userId } })
 }
 
 // Message API

@@ -13,6 +13,7 @@ class WebSocketService {
         this.maxReconnectAttempts = 5
         this.reconnectDelay = 3000
         this.onConnectCallback = null
+        this.groupSubscriptions = new Set() // Track subscribed group topics
     }
 
     connect(userId, onConnectCallback = null) {
@@ -87,13 +88,35 @@ class WebSocketService {
         this.client.subscribe('/user/queue/chats', this.handleChatEvent.bind(this))
     }
 
-    subscribeToChatRoom(chatId) {
+    subscribeToChatRoom(chatId, isGroup = false) {
         if (!this.connected) return
 
         this.client.subscribe(`/topic/chat/${chatId}`, (message) => {
             const data = JSON.parse(message.body)
             this.handleChatMessage(data)
         })
+
+        // If it's a group chat, also subscribe to group events topic
+        if (isGroup) {
+            this.subscribeToGroupTopic(chatId)
+        }
+    }
+
+    subscribeToGroupTopic(groupId) {
+        if (!this.connected) return
+
+        const subscriptionKey = `group_${groupId}`
+        if (this.groupSubscriptions.has(subscriptionKey)) return
+
+        this.client.subscribe(`/topic/group/${groupId}`, (message) => {
+            const data = JSON.parse(message.body)
+            console.log('Received group event:', data)
+            // Reuse handleChatEvent to process group events
+            this.handleChatEvent({ body: JSON.stringify(data) })
+        })
+
+        this.groupSubscriptions.add(subscriptionKey)
+        console.log('Subscribed to group topic:', groupId)
     }
 
     handleMessage(message) {
@@ -293,9 +316,9 @@ class WebSocketService {
 
             // Subscribe to this chat room
             if (!chatStore.isChatSubscribed(newChat.id)) {
-                this.subscribeToChatRoom(newChat.id)
+                this.subscribeToChatRoom(newChat.id, isGroup)
                 chatStore.markChatSubscribed(newChat.id)
-                console.log('Auto-subscribed to new chat:', newChat.id)
+                console.log('Auto-subscribed to new chat:', newChat.id, isGroup ? '(group)' : '(direct)')
             }
         } else if (data.type === 'GROUP_UPDATED') {
             // Group info updated
@@ -398,6 +421,7 @@ class WebSocketService {
         if (this.client) {
             this.client.deactivate()
             this.connected = false
+            this.groupSubscriptions.clear()
         }
     }
 }

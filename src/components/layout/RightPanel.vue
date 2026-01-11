@@ -505,7 +505,8 @@ const executeConfirmedAction = async () => {
     await loadGroupMembers()
   } catch (error) {
     console.error('Action failed:', error)
-    ElMessage.error(t('common.operationFailed'))
+    const errorMessage = error.response?.data?.message || t('common.operationFailed')
+    ElMessage.error(errorMessage)
   } finally {
     confirmDialog.value.loading = false
     confirmDialog.value.visible = false

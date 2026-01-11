@@ -65,7 +65,15 @@
         "welcomeTo": "Welcome to",
         "welcomeSubtitle": "Pick a conversation from the sidebar to start chatting, or create a new one to connect with friends.",
         "startNewChat": "Start New Chat",
-        "endToEndEncrypted": "End-to-End Encrypted"
+        "endToEndEncrypted": "End-to-End Encrypted",
+        "deleteChat": "Delete Chat",
+        "confirmDeleteChat": "Are you sure you want to delete the chat with {name}? Chat history will be cleared.",
+        "deleteChatSuccess": "Chat deleted",
+        "deleteChatFailed": "Failed to delete chat",
+        "pin": "Pin",
+        "unpin": "Unpin",
+        "pinSuccess": "Pinned",
+        "unpinSuccess": "Unpinned"
     },
     "settings": {
         "settings": "Settings",

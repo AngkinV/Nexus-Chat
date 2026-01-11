@@ -94,6 +94,11 @@ export const useMessageStore = defineStore('message', () => {
         }
     }
 
+    // Clear all messages for a chat (used when deleting chat)
+    function clearMessages(chatId) {
+        delete messages.value[chatId]
+    }
+
     return {
         messages,
         getMessages,
@@ -103,6 +108,7 @@ export const useMessageStore = defineStore('message', () => {
         prependMessages,
         markMessageAsRead,
         markLastMessageFailed,
+        clearMessages,
         addTypingUser,
         removeTypingUser,
         getTypingUsers
