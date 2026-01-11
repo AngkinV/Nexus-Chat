@@ -97,14 +97,9 @@ export const useChatStore = defineStore('chat', () => {
                 ...chats.value[chatIndex],
                 ...updates
             }
-            // Move chat to top if lastMessage is updated
-            if (updates.lastMessage) {
-                const chat = chats.value.splice(chatIndex, 1)[0]
-                chats.value.unshift(chat)
-            }
             // Update activeChat if it's the same chat
             if (activeChat.value?.id === chatId) {
-                activeChat.value = { ...chats.value.find(c => c.id === chatId) }
+                activeChat.value = { ...chats.value[chatIndex] }
             }
         }
     }
@@ -199,9 +194,6 @@ export const useChatStore = defineStore('chat', () => {
         if (chatIndex !== -1) {
             chats.value[chatIndex].lastMessage = messageData.type === 'TEXT' ? messageData.content : '[Image]'
             chats.value[chatIndex].lastMessageTime = new Date()
-            // Move to top
-            const chat = chats.value.splice(chatIndex, 1)[0]
-            chats.value.unshift(chat)
         }
     }
 

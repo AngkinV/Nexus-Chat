@@ -197,8 +197,8 @@ class WebSocketService {
 
             // Update last message in chat list
             chatStore.updateChat(msg.chatId, {
-                lastMessage: msg,
-                lastMessageAt: msg.createdAt
+                lastMessage: msg.content,
+                lastMessageTime: msg.createdAt
             })
 
             // Increment unread count if not current chat
